@@ -1,17 +1,28 @@
 package pt.ipleiria.estg.dei.ei.esoft;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import pt.ipleiria.estg.dei.ei.esoft.controlador.EquipaControlador;
+import pt.ipleiria.estg.dei.ei.esoft.vista.JanelaPrincipal;
+
+import javax.swing.*;
+
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+        // 1. MUDAR O ESTILO VISUAL AQUI!
+        try {
+            // Força o Java a usar o estilo bonito do teu Windows ou Mac
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        // 2. Inicializa o Controlador
+        EquipaControlador equipaControlador = new EquipaControlador();
+
+        // 3. Arranca a interface
+        SwingUtilities.invokeLater(() -> {
+            JanelaPrincipal janela = new JanelaPrincipal(equipaControlador);
+            janela.setVisible(true);
+        });
     }
 }
