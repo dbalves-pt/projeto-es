@@ -7,19 +7,28 @@ import pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio;
 import java.util.List;
 
 /**
- * Controlador para UC01 — Adicionar Equipa
+ * Controlador UC01 + UC02 — Adicionar / Editar / Eliminar Equipa.
  *
- * Recebe pedidos da camada Vista, executa validações de negócio
- * e delega as operações persistentes ao modelo (Torneio).
+ * UC02 — Editar / Eliminar Equipa:
+ *   Caminho Editar:
+ *     1. Utilizador clica sobre o nome de uma equipa no painel esquerdo.
+ *     2. Utilizador clica no nome no painel central (ou botão de edição).
+ *     3. Sistema abre o formulário 'Inserir Equipa' pré-preenchido.
+ *     4. Utilizador altera os dados e clica em 'Concluído'.
+ *     5. Sistema guarda as alterações e actualiza o ecrã.
  *
- * Fluxo ICONIX:
- *   Vista → EquipaControlador → Torneio / Equipa
+ *   Caminho Eliminar:
+ *     1. Utilizador clica no link 'Eliminar equipa…'.
+ *     2. Sistema abre diálogo de confirmação.
+ *     3. Utilizador clica em 'Confirmar Eliminação'.
+ *     4. Sistema remove a equipa e actualiza a lista.
+ *
+ *   CA 8.1 — Nome duplicado (edição): erro no campo 'Nome'.
+ *   CA 4.1 — Cancelamento (eliminar): fecha o diálogo.
+ *   CA "Grupos gerados": links de edição/eliminação ficam desativados.
  */
 public class EquipaControlador {
 
-    // ── Lista oficial de países aceites pelo sistema ───────────────────────────
-    // Reflecte o dropdown "País" do formulário Figma.
-    // Esta lista pode ser carregada de ficheiro em iterações futuras.
     private static final List<String> PAISES_VALIDOS = List.of(
             "Alemanha", "Argentina", "Austrália", "Bélgica", "Brasil",
             "Canadá", "Croácia", "Dinamarca", "Egipto", "Espanha",
@@ -31,80 +40,87 @@ public class EquipaControlador {
 
     private final Torneio torneio;
 
-    public EquipaControlador() {
-        this.torneio = Torneio.getInstancia();
-    }
+    public EquipaControlador()                { this.torneio = Torneio.getInstancia(); }
+    public EquipaControlador(Torneio t)       { this.torneio = t; }
 
-    /** Construtor com injeção — facilita testes unitários. */
-    public EquipaControlador(Torneio torneio) {
-        this.torneio = torneio;
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC01 — Adicionar Equipa
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public void adicionarEquipa(String nome, String pais) {
+        validarCamposComuns(nome, pais, null);
+        torneio.adicionarEquipa(new Equipa(nome.trim(), pais.trim()));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  UC01 — Caminho Principal
+    //  UC02 — Editar Equipa
     // ══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Tenta registar uma nova equipa.
+     * Actualiza os dados de uma equipa existente.
      *
-     * @param nome  Valor do campo "Nome" introduzido pelo utilizador.
-     * @param pais  País selecionado no dropdown "País".
-     * @throws IllegalStateException    CA "Grupos gerados" — link devia estar bloqueado.
-     * @throws IllegalArgumentException CA 5.1 campo vazio / 6.1 nome duplicado / 7.1 país inválido.
+     * @param equipa    A equipa a editar (referência directa ao objecto do modelo).
+     * @param novoNome  Novo nome introduzido pelo utilizador.
+     * @param novoPais  Novo país seleccionado.
+     *
+     * @throws IllegalStateException    CA "Grupos gerados".
+     * @throws IllegalArgumentException CA 5.1 campo vazio / 7.1 país inválido / 8.1 nome duplicado.
      */
-    public void adicionarEquipa(String nome, String pais) {
+    public void editarEquipa(Equipa equipa, String novoNome, String novoPais) {
+        if (equipa == null) throw new IllegalArgumentException("EQUIPA_NULA");
+        if (torneio.gruposGerados()) throw new IllegalStateException("GRUPOS_GERADOS");
 
-        // ── CA 5.1 — Campo obrigatório vazio ──────────────────────────────────
-        if (nome == null || nome.isBlank()) {
+        validarCamposComuns(novoNome, novoPais, equipa);
+
+        equipa.setNome(novoNome.trim());
+        equipa.setPais(novoPais.trim());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC02 — Eliminar Equipa
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Remove uma equipa do torneio.
+     *
+     * @throws IllegalStateException CA "Grupos gerados".
+     */
+    public void eliminarEquipa(Equipa equipa) {
+        if (equipa == null) throw new IllegalArgumentException("EQUIPA_NULA");
+        if (torneio.gruposGerados()) throw new IllegalStateException("GRUPOS_GERADOS");
+        torneio.removerEquipa(equipa);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  Auxiliares para a Vista
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public List<String>  getPaisesDisponiveis()        { return PAISES_VALIDOS; }
+    public List<Equipa>  getEquipas()                  { return torneio.getEquipas(); }
+    public boolean       isEdicaoBloqueada()           { return torneio.gruposGerados(); }
+
+    // ── Validação comum (UC01 + UC02) ─────────────────────────────────────────
+
+    /**
+     * @param equipaAtual null = inserção (UC01); não-null = edição (UC02).
+     */
+    private void validarCamposComuns(String nome, String pais, Equipa equipaAtual) {
+        if (nome == null || nome.isBlank())
             throw new IllegalArgumentException("CAMPO_NOME_VAZIO");
-        }
-        if (pais == null || pais.isBlank()) {
+        if (pais == null || pais.isBlank())
             throw new IllegalArgumentException("CAMPO_PAIS_VAZIO");
-        }
-
-        // ── CA "Grupos gerados" — torneio já avançou de estado ────────────────
-        if (torneio.gruposGerados()) {
-            throw new IllegalStateException("GRUPOS_GERADOS");
-        }
-
-        // ── CA 7.1 — País inválido ────────────────────────────────────────────
-        if (!isPaisValido(pais)) {
+        if (!isPaisValido(pais))
             throw new IllegalArgumentException("PAIS_INVALIDO");
-        }
 
-        // ── CA 6.1 — Nome duplicado ───────────────────────────────────────────
-        if (torneio.existeEquipaComNome(nome)) {
+        boolean duplicado = (equipaAtual == null)
+                ? torneio.existeEquipaComNome(nome)
+                : torneio.existeEquipaComNomeExcluindo(nome, equipaAtual);
+
+        if (duplicado)
             throw new IllegalArgumentException("NOME_DUPLICADO");
-        }
-
-        // ── Caminho principal — registo ───────────────────────────────────────
-        Equipa novaEquipa = new Equipa(nome.trim(), pais.trim());
-        torneio.adicionarEquipa(novaEquipa);
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  Métodos auxiliares para a Vista
-    // ══════════════════════════════════════════════════════════════════════════
-
-    /** Devolve a lista de países disponíveis no dropdown. */
-    public List<String> getPaisesDisponiveis() {
-        return PAISES_VALIDOS;
-    }
-
-    /** Indica se o link "Inserir equipa…" deve aparecer bloqueado. */
-    public boolean isInsercaoDeEquipaBloqueada() {
-        return torneio.gruposGerados();
-    }
-
-    /** Devolve a lista de equipas registadas (para actualizar o painel esquerdo). */
-    public List<Equipa> getEquipas() {
-        return torneio.getEquipas();
-    }
-
-    // ── Privados ──────────────────────────────────────────────────────────────
 
     private boolean isPaisValido(String pais) {
-        return PAISES_VALIDOS.stream()
-                .anyMatch(p -> p.equalsIgnoreCase(pais.trim()));
+        return PAISES_VALIDOS.stream().anyMatch(p -> p.equalsIgnoreCase(pais.trim()));
     }
 }
