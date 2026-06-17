@@ -3,7 +3,8 @@ package pt.ipleiria.estg.dei.ei.esoft.modelo;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador; // Importa o Jogador
+import java.time.LocalDate;                           // Importa a data
 /**
  * Entidade Equipa — versão actualizada para UC02 e UC03.
  *
@@ -91,4 +92,6 @@ public class Equipa {
 
     @Override
     public String toString() { return nome + " (" + pais + ")"; }
+
+
 }

@@ -270,6 +270,15 @@ public class FormularioJogador extends JDialog {
             case "NUMERO_CAMISOLA_DUPLICADO" -> { destacarErro(campNumero); lblErroNumero.setText("Este número já existe na equipa."); }
             case "CAMPO_ESTADO_VAZIO", "ESTADO_INVALIDO"
                     -> { destacarComboErro(comboEstado); lblErroEstado.setText("Selecione o estado."); }
+            case "IDADE_INVALIDA" -> {
+                destacarErro(campData); // Assume-se que a variável seja campData ou semelhante
+                lblErroData.setText("A idade deve estar entre 15 e 50 anos.");
+            }
+            case "LIMITE_JOGADORES_APTO_EXCEDIDO" -> {
+                JOptionPane.showMessageDialog(this,
+                        "Não é possível registar/alterar para APTO. A equipa já atingiu o limite máximo de 23 jogadores aptos.",
+                        "Aviso de Inscrição", JOptionPane.WARNING_MESSAGE);
+            }
             default -> JOptionPane.showMessageDialog(this, codigo, "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }

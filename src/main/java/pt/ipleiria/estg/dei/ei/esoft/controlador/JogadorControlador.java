@@ -109,6 +109,15 @@ public class JogadorControlador {
         int       numero  = parsarNumeroCamisola(numeroCamisolaStr);
         Estado    estado  = parsarEstado(descricaoEstado);
 
+        // ── VALIDAÇÃO: LIMITE DE 23 JOGADORES APTOS NA EDIÇÃO ──
+        if (estado == Estado.APTO && jogador.getEstado() != Estado.APTO) {
+            long numeroAptos = jogador.getEquipa().getJogadores().stream()
+                    .filter(j -> j.getEstado() == Estado.APTO)
+                    .count();
+            if (numeroAptos >= 23) {
+                throw new IllegalArgumentException("LIMITE_JOGADORES_APTO_EXCEDIDO");
+            }
+        }
         // Verificar duplicado excluindo o próprio jogador
         if (jogador.getEquipa().existeNumeroCamisolaExcluindo(numero, jogador))
             throw new IllegalArgumentException("NUMERO_CAMISOLA_DUPLICADO");
@@ -148,11 +157,31 @@ public class JogadorControlador {
 
     private LocalDate parsarData(String texto) {
         try {
-            return Jogador.parsarData(texto);
+            LocalDate data = Jogador.parsarData(texto);
+            LocalDate hoje = LocalDate.now();
+
+            // Calcula a idade aproximada do jogador
+            int idade = hoje.getYear() - data.getYear();
+
+            // ── VALIDAÇÕES REALISTAS DE IDADE PARA FUTEBOL ──
+            if (idade < 15 || idade > 50) {
+                throw new IllegalArgumentException("IDADE_INVALIDA");
+            }
+
+            return data;
+
         } catch (IllegalArgumentException e) {
+            // Se o erro foi a idade que definimos acima, passa o erro para a frente
+            if (e.getMessage().equals("IDADE_INVALIDA")) {
+                throw e;
+            }
+            // Qualquer outro erro de formato
+            throw new IllegalArgumentException("DATA_INVALIDA");
+        } catch (Exception e) {
             throw new IllegalArgumentException("DATA_INVALIDA");
         }
     }
+
 
     private int parsarNumeroCamisola(String texto) {
         try {

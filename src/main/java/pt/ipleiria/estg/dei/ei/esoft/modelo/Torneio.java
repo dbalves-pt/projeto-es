@@ -23,10 +23,12 @@ public class Torneio {
     /** Reinicia para testes unitários. */
     public static void resetInstancia() { instancia = null; }
 
+    private List<Estadio> estadios;
     private Estado       estado;
     private List<Equipa> equipas;
 
     private Torneio() {
+        this.estadios = new ArrayList<>();
         this.estado  = Estado.INICIAL;
         this.equipas = new ArrayList<>();
     }
@@ -69,4 +71,7 @@ public class Torneio {
     }
 
     public void setEstado(Estado novoEstado) { this.estado = novoEstado; }
+
+    public List<Estadio> getEstadios() { return estadios; }
+    public void adicionarEstadio(Estadio e) { estadios.add(e); }
 }

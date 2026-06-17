@@ -1,9 +1,10 @@
 package pt.ipleiria.estg.dei.ei.esoft;
 
 import pt.ipleiria.estg.dei.ei.esoft.controlador.EquipaControlador;
-import pt.ipleiria.estg.dei.ei.esoft.controlador.JogadorControlador;
+import pt.ipleiria.estg.dei.ei.esoft.modelo.*;
 import pt.ipleiria.estg.dei.ei.esoft.vista.JanelaPrincipal;
-
+import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador; // Importa o Jogador
+import java.time.LocalDate;                           // Importa a data
 import javax.swing.*;
 
 /**
@@ -21,14 +22,58 @@ public class Main {
             e.printStackTrace();
         }
 
-        // 2. Inicializar APENAS o controlador de equipas (pois a Janela cria o outro)
+        // 2. Injetar dados de teste para não termos de preencher tudo à mão sempre que abrimos o programa!
+        carregarDadosDeTeste();
+
+        // 3. Inicializar APENAS o controlador de equipas (pois a Janela cria o outro)
         EquipaControlador equipaControlador = new EquipaControlador();
 
-        // 3. Executar e apresentar a janela principal
+        // 4. Executar e apresentar a janela principal
         SwingUtilities.invokeLater(() -> {
             // ATENÇÃO: letra minúscula (variável) e apenas 1 parâmetro!
             JanelaPrincipal janela = new JanelaPrincipal(equipaControlador);
             janela.setVisible(true);
         });
     }
+
+    /**
+     * Método provisório para desenvolvimento.
+     * Injeta dados diretamente no Singleton para facilitar os testes da interface gráfica.
+     */
+
+    private static void carregarDadosDeTeste() {
+        Torneio torneio = Torneio.getInstancia();
+
+        // 1. Criar Estádios e Bancadas
+        Estadio e1 = new Estadio("Estádio da Luz", "Lisboa", "Portugal", 65000);
+        e1.adicionarBancada(new Bancada("Bancada VIP", 150.0, "VIP", 10, 500));
+        torneio.adicionarEstadio(e1);
+
+        // 2. Criar Equipas e Jogadores
+        // Criamos a equipa primeiro
+        Equipa portugal = new Equipa("Portugal", "Portugal");
+
+        // Criamos o jogador associando-o à equipa recém-criada
+        Jogador j1 = new Jogador(
+                "Cristiano Ronaldo",
+                portugal,
+                Jogador.Posicao.AVANCADO,
+                LocalDate.of(1985, 2, 5),
+                7,
+                Jogador.Estado.APTO
+        );
+
+        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
+        portugal.adicionarJogador(j1);
+
+        // Adicionamos a equipa ao torneio
+        torneio.adicionarEquipa(portugal);
+
+        // Adicionamos outras equipas simples
+        torneio.adicionarEquipa(new Equipa("França", "França"));
+        torneio.adicionarEquipa(new Equipa("Espanha", "Espanha"));
+        torneio.adicionarEquipa(new Equipa("Brasil", "Brasil"));
+    }
+
+
 }
