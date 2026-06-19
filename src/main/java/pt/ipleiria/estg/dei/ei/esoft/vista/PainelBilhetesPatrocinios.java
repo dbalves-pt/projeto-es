@@ -317,6 +317,12 @@ public class PainelBilhetesPatrocinios extends JPanel {
         btnAtualizar.addActionListener(e -> atualizarFinanceiro());
         cartao.add(btnAtualizar);
 
+        JButton btnExportar = new JButton("Exportar CSV");
+        btnExportar.setAlignmentX(LEFT_ALIGNMENT);
+        btnExportar.addActionListener(e -> exportarRelatorio());
+        cartao.add(btnExportar);
+
+
         atualizarFinanceiro();
         return cartao;
     }
@@ -348,9 +354,12 @@ public class PainelBilhetesPatrocinios extends JPanel {
     }
 
     private void atualizarPreco() {
+        Jogo jogo = (Jogo) comboJogo.getSelectedItem();
         Bancada b = (Bancada) comboBancada.getSelectedItem();
-        if (b != null) {
-            lblPreco.setText(String.format("%.2f", b.getPreco()));
+        if (jogo != null && b != null) {
+            Double especial = jogo.getPrecoEspecial(b);
+            double preco = (especial != null) ? especial : b.getPreco();
+            lblPreco.setText(String.format("%.2f", preco));
         } else {
             lblPreco.setText("0.00");
         }
@@ -446,5 +455,32 @@ public class PainelBilhetesPatrocinios extends JPanel {
         atualizarTabelaBilhetes();
         atualizarTabelaPatrocinios();
         atualizarFinanceiro();
+    }
+
+    private void exportarRelatorio() {
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setSelectedFile(new java.io.File("relatorio_financeiro.csv"));
+            if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+            java.io.File file = chooser.getSelectedFile();
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(file)) {
+                pw.println("Tipo;Valor (€)");
+                pw.println("Receita Bilheteira;" + String.format("%.2f", financeiroControlador.getReceitaBilheteira()));
+                pw.println("Receita Patrocínios;" + String.format("%.2f", financeiroControlador.getReceitaPatrocinios()));
+                pw.println("Receita Total;" + String.format("%.2f", financeiroControlador.getReceitaTotal()));
+
+                // Detalhe por jogo
+                pw.println("\nDetalhe por Jogo;");
+                pw.println("Jogo;Receita Bilhetes");
+                for (Jogo j : jogoControlador.getJogos()) {
+                    double rec = bilheteControlador.getReceitaPorJogo(j);
+                    pw.println(j.getEquipaCasa().getNome() + " vs " + j.getEquipaFora().getNome() + ";" + String.format("%.2f", rec));
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Relatório exportado com sucesso!");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erro ao exportar: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

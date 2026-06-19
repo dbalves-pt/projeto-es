@@ -1,9 +1,7 @@
 package pt.ipleiria.estg.dei.ei.esoft.modelo;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Entidade Jogo — núcleo dos casos de uso UC07 a UC12.
@@ -28,6 +26,7 @@ public class Jogo {
     private final LocalDateTime dataHora;
     private final Grupo grupo;       // null se for jogo de eliminatória
     private final Fase fase;
+    private final Map<Bancada, Double> precosEspeciais = new HashMap<>();
 
     private Estado estado;
     private LocalDateTime horaInicio;
@@ -177,5 +176,15 @@ public class Jogo {
                 ? "vs"
                 : golosEquipa1 + " - " + golosEquipa2;
         return equipa1.getNome() + " " + resultado + " " + equipa2.getNome();
+    }
+
+    public void definirPrecoEspecial(Bancada bancada, double novoPreco) {
+        if (bancada == null) throw new IllegalArgumentException("Bancada inválida.");
+        if (novoPreco <= 0) throw new IllegalArgumentException("Preço deve ser positivo.");
+        precosEspeciais.put(bancada, novoPreco);
+    }
+
+    public Double getPrecoEspecial(Bancada bancada) {
+        return precosEspeciais.get(bancada);
     }
 }

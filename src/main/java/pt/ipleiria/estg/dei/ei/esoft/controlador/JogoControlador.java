@@ -63,6 +63,13 @@ public class JogoControlador {
      */
     public void iniciarJogo(Jogo jogo) {
         if (jogo == null) throw new IllegalArgumentException("JOGO_NULO");
+
+        // UC08: só permite iniciar jogo se o torneio estiver EM_CURSO
+        Torneio torneio = Torneio.getInstancia();
+        if (torneio.getEstado() != Torneio.Estado.EM_CURSO) {
+            throw new IllegalStateException("TORNEIO_NAO_INICIADO");
+        }
+
         jogo.iniciar();
     }
 

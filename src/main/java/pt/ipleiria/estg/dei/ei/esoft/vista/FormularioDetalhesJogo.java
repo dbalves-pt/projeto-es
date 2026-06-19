@@ -3,6 +3,7 @@ package pt.ipleiria.estg.dei.ei.esoft.vista;
 import pt.ipleiria.estg.dei.ei.esoft.controlador.EventoControlador;
 import pt.ipleiria.estg.dei.ei.esoft.controlador.JogoControlador;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo;
+import pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -131,7 +132,8 @@ public class FormularioDetalhesJogo extends JDialog {
         p.add(rigidH(18));
 
         // ── Botão Iniciar Jogo (UC09) ─────────────────────────────────────────
-        boolean podeIniciar = jogo.getEstado() == Jogo.Estado.CALENDARIZADO;
+        boolean podeIniciar = jogo.getEstado() == Jogo.Estado.CALENDARIZADO
+                && Torneio.getInstancia().getEstado() == Torneio.Estado.EM_CURSO;
         JButton btnIniciar = criarBotao("Iniciar Jogo", new Color(0x1565C0), Color.WHITE);
         btnIniciar.setEnabled(podeIniciar);
         btnIniciar.addActionListener(e -> aoIniciarJogo());
@@ -149,6 +151,19 @@ public class FormularioDetalhesJogo extends JDialog {
         btnEstat.addActionListener(e -> aoAbrirEstatisticas());
         btnEstat.setAlignmentX(LEFT_ALIGNMENT);
         p.add(btnEstat);
+
+        // ── Botão Alterar Preço de Bancada (UC14) ──
+        boolean podeAlterarPreco = jogo.getEstado() == Jogo.Estado.CALENDARIZADO;
+        JButton btnAlterarPreco = criarBotao("Alterar Preço de Bancada", new Color(0xE65100), Color.WHITE);
+        btnAlterarPreco.setEnabled(podeAlterarPreco);
+        btnAlterarPreco.addActionListener(e -> {
+            FormularioAlterarPreco form = new FormularioAlterarPreco(
+                    this, jogo, () -> { /* atualizar se necessário */ });
+            form.setVisible(true);
+        });
+        btnAlterarPreco.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(btnAlterarPreco);
+        p.add(rigidH(8));
 
         return p;
     }
@@ -177,6 +192,22 @@ public class FormularioDetalhesJogo extends JDialog {
             JOptionPane.showMessageDialog(this,
                     "Não é possível iniciar o jogo: " + ex.getMessage(),
                     "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+
+        try {
+            jogoControlador.iniciarJogo(jogo);
+            if (aoAtualizar != null) aoAtualizar.run();
+            dispose();
+            PainelEstatisticasJogo painel = new PainelEstatisticasJogo(
+                    (Window) getParent(), jogoControlador, eventoControlador, jogo, aoAtualizar);
+            painel.setVisible(true);
+        } catch (IllegalStateException ex) {
+            String msg = switch (ex.getMessage()) {
+                case "JOGO_NAO_CALENDARIZADO" -> "O jogo já foi iniciado ou terminou.";
+                case "TORNEIO_NAO_INICIADO"   -> "O torneio ainda não foi iniciado. Inicie o torneio na Página Principal.";
+                default -> "Não é possível iniciar o jogo: " + ex.getMessage();
+            };
+            JOptionPane.showMessageDialog(this, msg, "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 

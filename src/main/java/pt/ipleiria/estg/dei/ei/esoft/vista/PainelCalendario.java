@@ -219,12 +219,24 @@ public class PainelCalendario extends JPanel {
         if (linha == -1 || jogosListados == null || linha >= jogosListados.size()) return;
 
         Jogo jogo = jogosListados.get(linha);
+
+        // Callback que atualiza o calendário E as estatísticas
+        Runnable aoAtualizarTudo = () -> {
+            PainelCalendario.this.atualizar();  // atualiza a tabela de jogos e grupos
+
+            // Atualiza também a aba Jogadores se a janela principal estiver acessível
+            Window window = SwingUtilities.getWindowAncestor(PainelCalendario.this);
+            if (window instanceof JanelaPrincipal) {
+                ((JanelaPrincipal) window).atualizarEstatisticas();
+            }
+        };
+
         FormularioDetalhesJogo form = new FormularioDetalhesJogo(
                 SwingUtilities.getWindowAncestor(this),
                 jogoControlador,
                 eventoControlador,
                 jogo,
-                this::atualizar
+                aoAtualizarTudo
         );
         form.setVisible(true);
     }

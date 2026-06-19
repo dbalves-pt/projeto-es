@@ -1,15 +1,14 @@
 package pt.ipleiria.estg.dei.ei.esoft.controlador;
 
-import pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa;
-import pt.ipleiria.estg.dei.ei.esoft.modelo.EventoJogo;
+import pt.ipleiria.estg.dei.ei.esoft.modelo.*;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.EventoJogo.Tipo;
-import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador;
-import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -159,5 +158,44 @@ public class EventoControlador {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("MINUTO_INVALIDO");
         }
+    }
+
+    public Map<Jogador, Integer> getGolosPorJogador() {
+        Map<Jogador, Integer> contagem = new HashMap<>();
+        for (Jogo jogo : Torneio.getInstancia().getJogos()) {
+            if (jogo.getEstado() != Jogo.Estado.TERMINADO) continue;
+            for (EventoJogo ev : jogo.getEventos()) {
+                if (ev.getTipo() == EventoJogo.Tipo.GOLO) {
+                    contagem.merge(ev.getJogador(), 1, Integer::sum);
+                }
+            }
+        }
+        return contagem;
+    }
+
+    public Map<Jogador, Integer> getAssistenciasPorJogador() {
+        Map<Jogador, Integer> contagem = new HashMap<>();
+        for (Jogo jogo : Torneio.getInstancia().getJogos()) {
+            if (jogo.getEstado() != Jogo.Estado.TERMINADO) continue;
+            for (EventoJogo ev : jogo.getEventos()) {
+                if (ev.getTipo() == EventoJogo.Tipo.ASSISTENCIA) {
+                    contagem.merge(ev.getJogador(), 1, Integer::sum);
+                }
+            }
+        }
+        return contagem;
+    }
+
+    public Map<Jogador, Integer> getDefesasPorJogador() {
+        Map<Jogador, Integer> contagem = new HashMap<>();
+        for (Jogo jogo : Torneio.getInstancia().getJogos()) {
+            if (jogo.getEstado() != Jogo.Estado.TERMINADO) continue;
+            for (EventoJogo ev : jogo.getEventos()) {
+                if (ev.getTipo() == EventoJogo.Tipo.DEFESA) {
+                    contagem.merge(ev.getJogador(), 1, Integer::sum);
+                }
+            }
+        }
+        return contagem;
     }
 }

@@ -31,6 +31,12 @@ public class JanelaPrincipal extends JFrame {
     private final PatrocinioControlador patrocinioControlador;
     private final FinanceiroControlador financeiroControlador;
 
+
+
+    // ── Referência ao painel de estatísticas do torneio (para atualizar ao mudar de aba) ──
+    private PainelEstatisticasTorneio painelEstatisticas;
+    private int indiceJogadores;
+
     // ── Componentes do ecrã de criação ────────────────────────────────────────
     private DefaultListModel<Equipa> listModel;
     private JList<Equipa>            listaEquipas;
@@ -270,8 +276,17 @@ public class JanelaPrincipal extends JFrame {
         painelCalendario = new PainelCalendario(torneioControlador, jogoControlador, eventoControlador);
         tabs.addTab("Calendário", painelCalendario);
 
+        painelEstatisticas = new PainelEstatisticasTorneio();
         // Separador "Jogadores" — stub (estatísticas UC17, fora do âmbito UC09-12)
-        tabs.addTab("Jogadores", new JPanel());
+        tabs.addTab("Jogadores", new PainelEstatisticasTorneio());
+
+        tabs.addChangeListener(e -> {
+            PainelEstatisticasTorneio painelEstatisticas;
+            painelEstatisticas = new PainelEstatisticasTorneio();
+            if (tabs.getSelectedIndex() == indiceJogadores && painelEstatisticas != null) {
+                painelEstatisticas.atualizar();
+            }
+        });
 
         PainelBilhetesPatrocinios painelBilhetes = new PainelBilhetesPatrocinios(
                 bilheteControlador, patrocinioControlador, financeiroControlador, jogoControlador);
@@ -451,5 +466,11 @@ public class JanelaPrincipal extends JFrame {
                 new LineBorder(COR_BRANCO, 1, true), new EmptyBorder(5, 10, 5, 10)));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
+    }
+
+    public void atualizarEstatisticas() {
+        if (painelEstatisticas != null) {
+            painelEstatisticas.atualizar();
+        }
     }
 }

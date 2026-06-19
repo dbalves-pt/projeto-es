@@ -45,6 +45,10 @@ public class BilheteControlador {
         if (ocupado) throw new IllegalStateException("Este lugar já está ocupado (vendido ou reservado).");
 
         double precoFinal = precoBase; // aqui poderá aplicar descontos no futuro
+        Double especial = jogo.getPrecoEspecial(bancada);
+        if (especial != null) {
+            precoFinal = especial;
+        }
 
         Bilhete bilhete = new Bilhete(jogo, bancada, fila, assento, precoFinal);
         bilhete.vender(comprador);
