@@ -24,6 +24,7 @@ public class Main {
         // 2. Inicializar APENAS o controlador de equipas (pois a Janela cria o outro)
         EquipaControlador equipaControlador = new EquipaControlador();
 
+
         // 3. Executar e apresentar a janela principal
         SwingUtilities.invokeLater(() -> {
             // ATENÇÃO: letra minúscula (variável) e apenas 1 parâmetro!

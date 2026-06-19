@@ -1,7 +1,6 @@
 package pt.ipleiria.estg.dei.ei.esoft.vista;
 
-import pt.ipleiria.estg.dei.ei.esoft.controlador.JogadorControlador;
-import pt.ipleiria.estg.dei.ei.esoft.controlador.EquipaControlador;
+import pt.ipleiria.estg.dei.ei.esoft.controlador.*;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa;
 
 
@@ -173,35 +172,39 @@ public class JanelaPrincipal extends JFrame {
     //  TRANSIÇÃO PARA A DASHBOARD PRINCIPAL
     // ══════════════════════════════════════════════════════════════════════════
 
-    private void abrirDashboard() {
-        // 1. Limpa o ecrã inicial (remove o fundo azul e o cartão)
-        getContentPane().removeAll();
-        setLayout(new BorderLayout()); // Muda o layout para ecrã inteiro
+    // Dentro de JanelaPrincipal.java
 
-        // 2. Cria o Menu Superior de Abas (JTabbedPane)
+    private void abrirDashboard() {
+        getContentPane().removeAll();
+        setLayout(new BorderLayout());
+
+        // Controladores adicionais
+        BilheteControlador bilheteCtrl = new BilheteControlador();
+        PatrocinioControlador patrocinioCtrl = new PatrocinioControlador();
+        EstatisticaControlador estatisticaCtrl = new EstatisticaControlador();
+
         JTabbedPane menuTabs = new JTabbedPane();
-        menuTabs.setBackground(COR_FUNDO_AZUL); // O azul claro do topo do teu Figma
+        menuTabs.setBackground(COR_FUNDO_AZUL);
         menuTabs.setFont(new Font("SansSerif", Font.BOLD, 14));
         menuTabs.setOpaque(true);
 
-        // 3. Cria as abas vazias por agora (vamos preenchê-las a seguir)
-        menuTabs.addTab("Página Principal", new JPanel());
+        // Abas existentes
+        menuTabs.addTab("Página Principal", new JPanel()); // Podes preencher depois
+        menuTabs.addTab("Equipas", new PainelEquipas(equipaControlador, jogadorControlador));
+        menuTabs.addTab("Estádios", new JPanel()); // UC06 – podes implementar depois
+        menuTabs.addTab("Calendário", new JPanel()); // UC07–UC12 (futuro)
 
-        // ── AQUI ESTÁ A CORREÇÃO: Chama o teu novo painel ──
-        PainelEquipas painelEquipas = new PainelEquipas(equipaControlador, jogadorControlador);
-        menuTabs.addTab("Equipas", painelEquipas);
+        // Novas abas
+        menuTabs.addTab("Bilhetes", new PainelBilhetes(bilheteCtrl));
+        menuTabs.addTab("Descontos", new PainelDescontos(bilheteCtrl));
+        menuTabs.addTab("Patrocínios", new PainelPatrocinios(patrocinioCtrl));
+        menuTabs.addTab("Financeiro", new PainelFinanceiro(bilheteCtrl, patrocinioCtrl));
+        menuTabs.addTab("Estatísticas", new PainelEstatisticas(estatisticaCtrl));
+        menuTabs.addTab("Classificação", new PainelClassificacao(estatisticaCtrl));
 
-        JPanel abaEstadios = new JPanel(); // Aqui vai entrar o UC06!
-        abaEstadios.setBackground(Color.WHITE);
-        menuTabs.addTab("Estádios", abaEstadios);
-
-        menuTabs.addTab("Calendário", new JPanel());
-        menuTabs.addTab("Jogadores", new JPanel());
-
-        // 4. Força o programa a abrir automaticamente na aba "Equipas" (índice 1)
+        // Força a seleção da aba Equipas (índice 1)
         menuTabs.setSelectedIndex(1);
 
-        // 5. Adiciona a Dashboard à janela e manda o Java redesenhar o ecrã
         add(menuTabs, BorderLayout.CENTER);
         revalidate();
         repaint();
