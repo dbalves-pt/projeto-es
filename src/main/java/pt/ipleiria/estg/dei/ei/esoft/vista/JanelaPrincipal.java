@@ -27,6 +27,9 @@ public class JanelaPrincipal extends JFrame {
     private final TorneioControlador   torneioControlador;
     private final JogoControlador      jogoControlador;
     private final EventoControlador    eventoControlador;
+    private final BilheteControlador bilheteControlador;
+    private final PatrocinioControlador patrocinioControlador;
+    private final FinanceiroControlador financeiroControlador;
 
     // ── Componentes do ecrã de criação ────────────────────────────────────────
     private DefaultListModel<Equipa> listModel;
@@ -53,6 +56,9 @@ public class JanelaPrincipal extends JFrame {
         this.torneioControlador = new TorneioControlador();
         this.jogoControlador    = new JogoControlador();
         this.eventoControlador  = new EventoControlador();
+        this.bilheteControlador = new BilheteControlador();
+        this.patrocinioControlador = new PatrocinioControlador();
+        this.financeiroControlador = new FinanceiroControlador(bilheteControlador, patrocinioControlador);
         construirUI();
     }
 
@@ -266,6 +272,10 @@ public class JanelaPrincipal extends JFrame {
 
         // Separador "Jogadores" — stub (estatísticas UC17, fora do âmbito UC09-12)
         tabs.addTab("Jogadores", new JPanel());
+
+        PainelBilhetesPatrocinios painelBilhetes = new PainelBilhetesPatrocinios(
+                bilheteControlador, patrocinioControlador, financeiroControlador, jogoControlador);
+        tabs.addTab("Receita", painelBilhetes);
 
         tabs.setSelectedIndex(3); // abre no Calendário após gerar
 

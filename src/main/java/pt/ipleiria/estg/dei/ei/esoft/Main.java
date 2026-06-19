@@ -70,9 +70,51 @@ public class Main {
         torneio.adicionarEquipa(portugal);
 
         // Adicionamos outras equipas simples
-        torneio.adicionarEquipa(new Equipa("França", "França"));
-        torneio.adicionarEquipa(new Equipa("Espanha", "Espanha"));
-        torneio.adicionarEquipa(new Equipa("Brasil", "Brasil"));
+        Equipa franca = new Equipa("França", "França");
+        Jogador j2 = new Jogador(
+                "Cristiano Ronaldo",
+                franca,
+                Jogador.Posicao.AVANCADO,
+                LocalDate.of(1985, 2, 5),
+                7,
+                Jogador.Estado.APTO
+        );
+
+        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
+        franca.adicionarJogador(j1);
+
+        // Adicionamos a equipa ao torneio
+        torneio.adicionarEquipa(franca);
+        Equipa espanha = new Equipa("Espanha", "Espanha");
+        Jogador j3 = new Jogador(
+                "Cristiano Ronaldo",
+                espanha,
+                Jogador.Posicao.AVANCADO,
+                LocalDate.of(1985, 2, 5),
+                7,
+                Jogador.Estado.APTO
+        );
+
+        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
+        espanha.adicionarJogador(j1);
+
+        // Adicionamos a equipa ao torneio
+        torneio.adicionarEquipa(espanha);
+        Equipa brasil = new Equipa("Brasil", "Brasil");
+        Jogador j4 = new Jogador(
+                "Cristiano Ronaldo",
+                brasil,
+                Jogador.Posicao.AVANCADO,
+                LocalDate.of(1985, 2, 5),
+                7,
+                Jogador.Estado.APTO
+        );
+
+        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
+        brasil.adicionarJogador(j1);
+
+        // Adicionamos a equipa ao torneio
+        torneio.adicionarEquipa(brasil);
     }
 
 
