@@ -126,4 +126,63 @@ public class TorneioControlador {
     public List<Grupo> getGrupos()   { return torneio.getGrupos(); }
     public List<Jogo>  getJogos()    { return torneio.getJogos(); }
     public Torneio.Estado getEstadoTorneio() { return torneio.getEstado(); }
+
+    /**
+     * Gera os jogos da Fase Eliminatória (Quartos de Final) cruzando os
+     * 1ºs e 2ºs classificados dos 4 grupos.
+     */
+    public void gerarQuartosDeFinal() {
+        pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio torneio = pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio.getInstancia();
+
+        // 1. Verificar se a fase de grupos já acabou (todos os jogos de GRUPOS estão TERMINADOS)
+        boolean todosGruposTerminados = torneio.getJogos().stream()
+                .filter(j -> j.getFase() == Jogo.Fase.GRUPOS)
+                .allMatch(j -> j.getEstado() == Jogo.Estado.TERMINADO);
+
+        if (!todosGruposTerminados) {
+            throw new IllegalStateException("Ainda existem jogos da Fase de Grupos por terminar!");
+        }
+
+        // 2. Verificar se já não gerámos os quartos de final antes (para não duplicar)
+        boolean jaTemQuartos = torneio.getJogos().stream()
+                .anyMatch(j -> j.getFase() == Jogo.Fase.QUARTOS);
+
+        if (jaTemQuartos) {
+            throw new IllegalStateException("A fase eliminatória já foi gerada!");
+        }
+
+        List<pt.ipleiria.estg.dei.ei.esoft.modelo.Grupo> grupos = torneio.getGrupos();
+        if (grupos.size() < 4) {
+            throw new IllegalStateException("É necessário ter pelo menos 4 grupos para gerar Quartos de Final.");
+        }
+
+        /* 3. Obter as equipas apuradas (Cruzamento clássico de torneios) */
+        List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> todosJogos = torneio.getJogos();
+
+        Equipa q1Casa = grupos.get(0).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo A
+        Equipa q1Fora = grupos.get(1).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo B
+
+        Equipa q2Casa = grupos.get(2).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo C
+        Equipa q2Fora = grupos.get(3).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo D
+
+        Equipa q3Casa = grupos.get(1).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo B
+        Equipa q3Fora = grupos.get(0).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo A
+
+        Equipa q4Casa = grupos.get(3).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo D
+        Equipa q4Fora = grupos.get(2).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo C
+
+        // 4. Agendar os jogos (vamos buscar o primeiro estádio da lista e a data do último jogo)
+        pt.ipleiria.estg.dei.ei.esoft.modelo.Estadio estadio = torneio.getEstadios().get(0);
+        java.time.LocalDateTime ultimaData = torneio.getJogos().stream()
+                .map(Jogo::getDataHora)
+                .max(java.time.LocalDateTime::compareTo)
+                .orElse(java.time.LocalDateTime.now());
+
+        // 5. Adicionar os 4 jogos ao torneio (sem pertencerem a nenhum grupo, daí o 'null')
+        torneio.adicionarJogo(new Jogo(q1Casa, q1Fora, estadio, ultimaData.plusDays(2), null, Jogo.Fase.QUARTOS));
+        torneio.adicionarJogo(new Jogo(q2Casa, q2Fora, estadio, ultimaData.plusDays(3), null, Jogo.Fase.QUARTOS));
+        torneio.adicionarJogo(new Jogo(q3Casa, q3Fora, estadio, ultimaData.plusDays(4), null, Jogo.Fase.QUARTOS));
+        torneio.adicionarJogo(new Jogo(q4Casa, q4Fora, estadio, ultimaData.plusDays(5), null, Jogo.Fase.QUARTOS));
+    }
 }
+
