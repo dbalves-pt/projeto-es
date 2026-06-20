@@ -50,10 +50,12 @@
         // ── Componentes ───────────────────────────────────────────────────────────
         private JTextField        campNome;
         private JComboBox<String> comboPais;
+        private JTextField        campTreinador; // <--- NOVO
         private JTextField        campGrupo;
         private JPanel            painelListaJogadores;
         private JLabel            lblErroNome;
         private JLabel            lblErroPais;
+        private JLabel            lblErroTreinador;
 
         // ── Dependências ──────────────────────────────────────────────────────────
         private final EquipaControlador  ctrlEquipa;
@@ -152,6 +154,14 @@
             p.add(lblErroPais);
             p.add(rigidH(8));
 
+            // ── NOVO: Treinador ───────────────────────────────────────────────────
+            campTreinador = criarTextField("Nome do Treinador...");
+            campTreinador.setAlignmentX(LEFT_ALIGNMENT);
+            p.add(campTreinador);
+            lblErroTreinador = labelErro();
+            p.add(lblErroTreinador);
+            p.add(rigidH(8)); // Mudei de 16 para 8 para o espaçamento ficar igual aos outros
+
             // ── Grupo (desativado) ────────────────────────────────────────────────
             campGrupo = new JTextField("Grupo (atribuído automaticamente)");
             campGrupo.setFont(FONTE_NORMAL);
@@ -181,15 +191,14 @@
             secao.setLayout(new BoxLayout(secao, BoxLayout.Y_AXIS));
             secao.setOpaque(false);
             secao.setAlignmentX(LEFT_ALIGNMENT);
-            secao.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
+
+            // Aumentei ligeiramente a altura máxima para o scroll ficar mais confortável
+            secao.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
 
             // Cabeçalho cinzento
             JPanel header = new JPanel(new BorderLayout());
             header.setBackground(COR_CINZENTO);
             header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-            // ── A MAGIA ESTÁ AQUI ──
-            // Forçamos o cabeçalho a alinhar à esquerda para que não empurre os de baixo!
             header.setAlignmentX(LEFT_ALIGNMENT);
 
             JLabel lbl = new JLabel("  Jogadores");
@@ -204,7 +213,14 @@
             painelListaJogadores.setBackground(new Color(0xF5F5F5));
             painelListaJogadores.setAlignmentX(LEFT_ALIGNMENT);
             atualizarListaJogadores();
-            secao.add(painelListaJogadores);
+
+            // ── AQUI ESTÁ A MAGIA DO SCROLL ──
+            JScrollPane scrollJogadores = new JScrollPane(painelListaJogadores);
+            scrollJogadores.setBorder(BorderFactory.createEmptyBorder()); // Tira a borda feia
+            scrollJogadores.setAlignmentX(LEFT_ALIGNMENT);
+            scrollJogadores.getVerticalScrollBar().setUnitIncrement(16); // Faz o scroll do rato andar mais rápido
+            secao.add(scrollJogadores);
+            // ──────────────────────────────────
 
             // Painel do link
             JPanel painelLink = new JPanel(new BorderLayout());
@@ -344,6 +360,12 @@
             campNome.setText(equipaParaEditar.getNome());
             campNome.setForeground(COR_TEXTO);
 
+            // ── NOVO: Treinador ──
+            if (equipaParaEditar.getTreinador() != null && !equipaParaEditar.getTreinador().isBlank()) {
+                campTreinador.setText(equipaParaEditar.getTreinador());
+                campTreinador.setForeground(COR_TEXTO);
+            }
+
             // País — seleciona a opção correcta no combo
             String paisAtual = equipaParaEditar.getPais();
             for (int i = 0; i < comboPais.getItemCount(); i++) {
@@ -396,6 +418,7 @@
             limparErros();
 
             String nome = textoReal(campNome, "Nome...");
+            String treinador = textoReal(campTreinador, "Nome do Treinador...");
             String pais = comboPais.getSelectedIndex() == 0
                     ? ""
                     : (String) comboPais.getSelectedItem();
@@ -403,10 +426,10 @@
             try {
                 if (equipaParaEditar == null) {
                     // UC01 — Inserir
-                    ctrlEquipa.adicionarEquipa(nome, pais);
+                    ctrlEquipa.adicionarEquipa(nome, pais, treinador);
                 } else {
                     // UC02 — Editar
-                    ctrlEquipa.editarEquipa(equipaParaEditar, nome, pais);
+                    ctrlEquipa.editarEquipa(equipaParaEditar, nome, pais, treinador);
                 }
                 if (aoAtualizar != null) aoAtualizar.run();
                 dispose();
@@ -428,6 +451,8 @@
                     destacarErro(campNome); lblErroNome.setText("O nome é obrigatório."); }
                 case "CAMPO_PAIS_VAZIO" -> {
                     destacarComboErro(comboPais); lblErroPais.setText("Selecione um país."); }
+                case "CAMPO_TREINADOR_VAZIO" -> {
+                    destacarErro(campTreinador); lblErroTreinador.setText("O treinador é obrigatório."); } // <--- ADICIONAR AQUI
                 case "NOME_DUPLICADO"   -> {
                     destacarErro(campNome); lblErroNome.setText("Já existe uma equipa com este nome."); }
                 case "PAIS_INVALIDO"    -> {
@@ -450,8 +475,10 @@
         private void limparErros() {
             campNome.setBorder(camposBorda(COR_BORDA, 1));
             comboPais.setBorder(null);
+            campTreinador.setBorder(camposBorda(COR_BORDA, 1));
             lblErroNome.setText(" ");
             lblErroPais.setText(" ");
+            lblErroTreinador.setText(" ");
         }
 
         // ── Utilitários de construção ──────────────────────────────────────────────

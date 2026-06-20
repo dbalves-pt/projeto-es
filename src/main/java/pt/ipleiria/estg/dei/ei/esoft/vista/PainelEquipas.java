@@ -18,6 +18,7 @@ public class PainelEquipas extends JPanel {
     // Variáveis para a Coluna do Meio
     private JPanel painelGruposContainer;
     private JLabel lblNomeEquipaMeio;
+    private JLabel lblTreinadorMeio; // Adicionar junto à lblNomeEquipaMeio
     private DefaultListModel<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador> listModelJogadores;
     private JList<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador> listaJogadoresMeio;
     private Equipa equipaSelecionadaAtual = null;
@@ -140,6 +141,14 @@ public class PainelEquipas extends JPanel {
             lblNomeEquipaMeio.setFont(new Font("SansSerif", Font.BOLD, 18));
             lblNomeEquipaMeio.setAlignmentX(Component.LEFT_ALIGNMENT);
             painel.add(lblNomeEquipaMeio);
+            painel.add(Box.createVerticalStrut(4)); // Reduzi o espaço aqui
+
+            // ── NOVO: Label para o Treinador ──
+            lblTreinadorMeio = new JLabel("Treinador: —");
+            lblTreinadorMeio.setFont(new Font("SansSerif", Font.ITALIC, 14));
+            lblTreinadorMeio.setForeground(Color.DARK_GRAY);
+            lblTreinadorMeio.setAlignmentX(Component.LEFT_ALIGNMENT);
+            painel.add(lblTreinadorMeio);
             painel.add(Box.createVerticalStrut(15));
 
             JLabel lblJogadores = new JLabel("Jogadores");
@@ -408,8 +417,12 @@ public class PainelEquipas extends JPanel {
 
         if (eq == null) {
             lblNomeEquipaMeio.setText("Selecione uma equipa...");
+            lblTreinadorMeio.setText("Treinador: —"); // NOVO
         } else {
             lblNomeEquipaMeio.setText(eq.getNome());
+
+            // NOVO: Vai buscar o treinador ou mete "Sem Treinador" se for null
+            lblTreinadorMeio.setText("Treinador: " + (eq.getTreinador() != null && !eq.getTreinador().isBlank() ? eq.getTreinador() : "Sem Treinador"));
 
             // Preenche a lista branca com os jogadores da equipa
             for (pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador j : eq.getJogadores()) {

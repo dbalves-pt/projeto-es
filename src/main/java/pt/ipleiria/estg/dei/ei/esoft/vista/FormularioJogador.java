@@ -264,10 +264,11 @@ public class FormularioJogador extends JDialog {
             if (aoAtualizar != null) aoAtualizar.run();
             dispose();
 
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             tratarErro(ex.getMessage());
         }
     }
+
 
     // ── Tratamento de erros visuais ────────────────────────────────────────────
 
@@ -285,13 +286,24 @@ public class FormularioJogador extends JDialog {
             case "CAMPO_ESTADO_VAZIO", "ESTADO_INVALIDO"
                     -> { destacarComboErro(comboEstado); lblErroEstado.setText("Selecione o estado."); }
             case "IDADE_INVALIDA" -> {
-                destacarErro(campData); // Assume-se que a variável seja campData ou semelhante
+                destacarErro(campData);
                 lblErroData.setText("A idade deve estar entre 15 e 50 anos.");
             }
             case "LIMITE_JOGADORES_APTO_EXCEDIDO" -> {
                 JOptionPane.showMessageDialog(this,
                         "Não é possível registar/alterar para APTO. A equipa já atingiu o limite máximo de 23 jogadores aptos.",
                         "Aviso de Inscrição", JOptionPane.WARNING_MESSAGE);
+            }
+            // ── NOVOS CASOS DE SUPORTE PARA MAIOR SEGURANÇA ──
+            case "TORNEIO_EM_CURSO_INSERCAO_BLOQUEADA" -> {
+                JOptionPane.showMessageDialog(this,
+                        "O primeiro jogo já começou! A inscrição de novos jogadores está encerrada.",
+                        "Mercado Fechado", JOptionPane.ERROR_MESSAGE);
+            }
+            case "APENAS_ALTERACAO_DE_ESTADO_PERMITIDA" -> {
+                JOptionPane.showMessageDialog(this,
+                        "O torneio está em curso! Apenas é permitido alterar o estado médico do jogador.",
+                        "Ação Bloqueada", JOptionPane.ERROR_MESSAGE);
             }
             default -> JOptionPane.showMessageDialog(this, codigo, "Erro", JOptionPane.ERROR_MESSAGE);
         }

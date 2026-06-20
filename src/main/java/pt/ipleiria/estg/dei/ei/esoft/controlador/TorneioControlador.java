@@ -48,11 +48,49 @@ public class TorneioControlador {
      *   EQUIPAS_SEM_JOGADORES      – CA 5.1: pelo menos uma equipa sem jogadores APTOS.
      *   SEM_ESTADIOS               – CA 6.1: não existe nenhum estádio criado para alocar os jogos.
      */
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC07 — Configurar Torneio
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Valida e gera o torneio (grupos + calendário de jogos da fase de grupos).
+     *
+     * Códigos de erro lançados (IllegalArgumentException / IllegalStateException):
+     * DATAS_INVALIDAS            – CA 4.1: datas em falta, mal formatadas ou fim antes do início.
+     * EQUIPAS_INCOMPATIVEIS      – CA 4.2: número de equipas não é par nem divisível por 4.
+     * EQUIPAS_SEM_JOGADORES      – CA 5.1: pelo menos uma equipa sem jogadores APTOS.
+     * SEM_ESTADIOS               – CA 6.1: não existe nenhum estádio criado para alocar os jogos.
+     */
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC07 — Configurar Torneio
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Valida e gera o torneio (grupos + calendário de jogos da fase de grupos).
+     *
+     * Códigos de erro lançados (IllegalArgumentException / IllegalStateException):
+     * DATAS_INVALIDAS            – CA 4.1: datas em falta, mal formatadas ou fim antes do início.
+     * EQUIPAS_INCOMPATIVEIS      – CA 4.2: número de equipas não é par nem divisível por 4.
+     * EQUIPAS_SEM_JOGADORES      – CA 5.1: pelo menos uma equipa sem jogadores APTOS.
+     * SEM_ESTADIOS               – CA 6.1: não existe nenhum estádio criado para alocar os jogos.
+     */
     public void configurarTorneio(LocalDate dataInicio, LocalDate dataFim, int diasDescanso) {
 
-        // CA 4.1 — Datas inválidas
+        // CA 4.1 — Datas inválidas (básicas)
         if (dataInicio == null || dataFim == null || dataFim.isBefore(dataInicio))
             throw new IllegalArgumentException("DATAS_INVALIDAS");
+
+        // ── VALIDAÇÃO: DATA DE INÍCIO APÓS O DIA DE HOJE ──
+        if (dataInicio.isBefore(LocalDate.now()) || dataInicio.isEqual(LocalDate.now())) {
+            throw new IllegalArgumentException("A data de início do torneio tem de ser posterior ao dia de hoje.");
+        }
+
+        // ── VALIDAÇÃO: DURAÇÃO MÍNIMA DE 30 DIAS ──
+        long diasDeTorneio = java.time.temporal.ChronoUnit.DAYS.between(dataInicio, dataFim);
+        if (diasDeTorneio < 30) {
+            throw new IllegalArgumentException("O torneio tem de ter uma duração mínima de 30 dias.");
+        }
+
         if (diasDescanso < 0)
             throw new IllegalArgumentException("DIAS_DESCANSO_INVALIDOS");
 
@@ -61,6 +99,18 @@ public class TorneioControlador {
         // CA 4.2 — Equipas incompatíveis com grupos (grupos de 4 equipas)
         if (equipas.isEmpty() || equipas.size() % 4 != 0)
             throw new IllegalArgumentException("EQUIPAS_INCOMPATIVEIS");
+
+        // ── NOVA VALIDAÇÃO: OBRIGA A TER TREINADOR ──
+        List<String> equipasSemTreinador = new ArrayList<>();
+        for (Equipa eq : equipas) {
+            if (eq.getTreinador() == null || eq.getTreinador().isBlank() || eq.getTreinador().equals("Sem Treinador")) {
+                equipasSemTreinador.add(eq.getNome());
+            }
+        }
+        if (!equipasSemTreinador.isEmpty()) {
+            throw new IllegalArgumentException("As seguintes equipas não têm um treinador atribuído:\n" + String.join(", ", equipasSemTreinador) + "\n\nEdite estas equipas antes de gerar o torneio.");
+        }
+        // ────────────────────────────────────────────
 
         // CA 5.1 — Equipas sem jogadores APTOS suficientes
         List<String> equipasSemJogadores = equipasSemJogadoresAptos();
@@ -75,6 +125,8 @@ public class TorneioControlador {
         torneio.gerarGruposEJogos();
         torneio.setEstado(Torneio.Estado.CONFIGURADO);
     }
+
+
 
     /** Lista as equipas que não têm nenhum jogador no estado APTO. */
     public List<String> equipasSemJogadoresAptos() {

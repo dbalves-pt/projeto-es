@@ -15,6 +15,7 @@ import java.time.LocalDate;                           // Importa a data
  */
 public class Equipa {
 
+    private String treinador = "Sem Treinador"; // Atributo
     private String         nome;
     private String         pais;
     private String         grupo;          // Atribuído automaticamente (UC07)
@@ -33,6 +34,10 @@ public class Equipa {
     public String          getNome()      { return nome; }
     public String          getPais()      { return pais; }
     public String          getGrupo()     { return grupo; }
+
+    // Getter e Setter
+    public String getTreinador() { return treinador; }
+    public void setTreinador(String treinador) { this.treinador = treinador; }
 
     /** Devolve cópia imutável da lista de jogadores. */
     public List<Jogador>   getJogadores() { return Collections.unmodifiableList(jogadores); }

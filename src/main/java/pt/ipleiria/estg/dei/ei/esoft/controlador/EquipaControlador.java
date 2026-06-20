@@ -49,34 +49,37 @@ public class EquipaControlador {
 
 
 
-    public void adicionarEquipa(String nome, String pais) {
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC01 — Adicionar Equipa (Atualizado com Treinador)
+    // ══════════════════════════════════════════════════════════════════════════
+    public void adicionarEquipa(String nome, String pais, String treinador) {
         if (torneio.gruposGerados()) throw new IllegalStateException("GRUPOS_GERADOS");
+
         validarCamposComuns(nome, pais, null);
-        torneio.adicionarEquipa(new Equipa(nome.trim(), pais.trim()));
+        if (treinador == null || treinador.isBlank()) {
+            throw new IllegalArgumentException("CAMPO_TREINADOR_VAZIO");
+        }
+
+        Equipa novaEquipa = new Equipa(nome.trim(), pais.trim());
+        novaEquipa.setTreinador(treinador.trim());
+        torneio.adicionarEquipa(novaEquipa);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  UC02 — Editar Equipa
+    //  UC02 — Editar Equipa (Atualizado com Treinador)
     // ══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Actualiza os dados de uma equipa existente.
-     *
-     * @param equipa    A equipa a editar (referência directa ao objecto do modelo).
-     * @param novoNome  Novo nome introduzido pelo utilizador.
-     * @param novoPais  Novo país seleccionado.
-     *
-     * @throws IllegalStateException    CA "Grupos gerados".
-     * @throws IllegalArgumentException CA 5.1 campo vazio / 7.1 país inválido / 8.1 nome duplicado.
-     */
-    public void editarEquipa(Equipa equipa, String novoNome, String novoPais) {
+    public void editarEquipa(Equipa equipa, String novoNome, String novoPais, String novoTreinador) {
         if (equipa == null) throw new IllegalArgumentException("EQUIPA_NULA");
         if (torneio.gruposGerados()) throw new IllegalStateException("GRUPOS_GERADOS");
 
         validarCamposComuns(novoNome, novoPais, equipa);
+        if (novoTreinador == null || novoTreinador.isBlank()) {
+            throw new IllegalArgumentException("CAMPO_TREINADOR_VAZIO");
+        }
 
         equipa.setNome(novoNome.trim());
         equipa.setPais(novoPais.trim());
+        equipa.setTreinador(novoTreinador.trim());
     }
 
     // ══════════════════════════════════════════════════════════════════════════
