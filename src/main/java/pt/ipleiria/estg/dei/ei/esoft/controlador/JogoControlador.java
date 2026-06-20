@@ -5,7 +5,12 @@ import pt.ipleiria.estg.dei.ei.esoft.modelo.EventoJogo;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Grupo;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio;
+import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -126,4 +131,131 @@ public class JogoControlador {
     public List<Grupo.LinhaClassificacao> getClassificacao(Grupo grupo) {
         return grupo.calcularClassificacao(torneio.getJogos());
     }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  Dashboard Dinâmica — Estatísticas Agregadas do Torneio
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Conta os golos marcados por cada jogador, considerando apenas eventos
+     * de jogos já TERMINADOS (evita "Melhor Marcador" a oscilar com jogos
+     * a meio, onde um evento ainda pode ser corrigido — UC12).
+     */
+    private Map<Jogador, Long> contarEventosPorJogador(EventoJogo.Tipo tipo) {
+        return torneio.getJogos().stream()
+                .filter(j -> j.getEstado() == Jogo.Estado.TERMINADO)
+                .flatMap(j -> j.getEventos().stream())
+                .filter(e -> e.getTipo() == tipo)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        EventoJogo::getJogador, java.util.stream.Collectors.counting()));
+    }
+
+    /** Devolve o par (jogador, total) do jogador com mais eventos de um dado tipo. */
+    private Optional<Map.Entry<Jogador, Long>> obterTopJogadorPorTipo(EventoJogo.Tipo tipo) {
+        return contarEventosPorJogador(tipo).entrySet().stream()
+                .max(Map.Entry.comparingByValue());
+    }
+
+    /** UC — Melhor Marcador: nome do jogador com mais golos (jogos terminados). */
+    public String obterNomeMelhorMarcador() {
+        return obterTopJogadorPorTipo(EventoJogo.Tipo.GOLO)
+                .map(e -> e.getKey().getNomeCompleto())
+                .orElse("—");
+    }
+
+    public String obterGolosMelhorMarcador() {
+        return obterTopJogadorPorTipo(EventoJogo.Tipo.GOLO)
+                .map(e -> String.valueOf(e.getValue()))
+                .orElse("0");
+    }
+
+    /** Jogador com mais assistências. */
+    public String obterNomeMaisAssistencias() {
+        return obterTopJogadorPorTipo(EventoJogo.Tipo.ASSISTENCIA)
+                .map(e -> e.getKey().getNomeCompleto())
+                .orElse("—");
+    }
+
+    public String obterNumeroMaisAssistencias() {
+        return obterTopJogadorPorTipo(EventoJogo.Tipo.ASSISTENCIA)
+                .map(e -> String.valueOf(e.getValue()))
+                .orElse("0");
+    }
+
+    /**
+     * Golos marcados por equipa, somando apenas jogos TERMINADOS.
+     * Usa golosCasa/golosFora do Jogo (já recalculados em recalcularMarcador()),
+     * em vez de percorrer eventos outra vez — mais barato e sempre consistente
+     * com o marcador oficial do jogo.
+     */
+    private Map<Equipa, Integer> golosMarcadosPorEquipa() {
+        Map<Equipa, Integer> mapa = new HashMap<>();
+        for (Jogo j : torneio.getJogos()) {
+            if (j.getEstado() != Jogo.Estado.TERMINADO) continue;
+            mapa.merge(j.getEquipaCasa(), j.getGolosCasa(), Integer::sum);
+            mapa.merge(j.getEquipaFora(), j.getGolosFora(), Integer::sum);
+        }
+        return mapa;
+    }
+
+    private Map<Equipa, Integer> golosSofridosPorEquipa() {
+        Map<Equipa, Integer> mapa = new HashMap<>();
+        for (Jogo j : torneio.getJogos()) {
+            if (j.getEstado() != Jogo.Estado.TERMINADO) continue;
+            mapa.merge(j.getEquipaCasa(), j.getGolosFora(), Integer::sum);
+            mapa.merge(j.getEquipaFora(), j.getGolosCasa(), Integer::sum);
+        }
+        return mapa;
+    }
+
+    /** Equipa com melhor ataque (mais golos marcados). */
+    public String obterEquipaMelhorAtaque() {
+        return golosMarcadosPorEquipa().entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(e -> e.getKey().getNome())
+                .orElse("—");
+    }
+
+    public String obterGolosMarcadosMelhorAtaque() {
+        return golosMarcadosPorEquipa().entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(e -> String.valueOf(e.getValue()))
+                .orElse("0");
+    }
+
+    /**
+     * Equipa com melhor defesa (menos golos sofridos).
+     * Só considera equipas que já têm pelo menos 1 jogo TERMINADO —
+     * caso contrário, uma equipa que ainda não jogou "ganharia" sempre
+     * por ter 0 golos sofridos.
+     */
+    public String obterEquipaMelhorDefesa() {
+        return golosSofridosPorEquipa().entrySet().stream()
+                .min(Map.Entry.comparingByValue())
+                .map(e -> e.getKey().getNome())
+                .orElse("—");
+    }
+
+    public String obterGolosSofridosMelhorDefesa() {
+        return golosSofridosPorEquipa().entrySet().stream()
+                .min(Map.Entry.comparingByValue())
+                .map(e -> String.valueOf(e.getValue()))
+                .orElse("0");
+    }
+
+    /**
+     * Vencedor do torneio: equipa vencedora do jogo de fase FINAL, apenas
+     * quando esse jogo já está TERMINADO. Antes disso devolve "—".
+     */
+    public String obterVencedorTorneio() {
+        return torneio.getJogos().stream()
+                .filter(j -> j.getFase() == Jogo.Fase.FINAL && j.getEstado() == Jogo.Estado.TERMINADO)
+                .findFirst()
+                .map(j -> j.getGolosCasa() > j.getGolosFora() ? j.getEquipaCasa().getNome()
+                        : j.getGolosFora() > j.getGolosCasa() ? j.getEquipaFora().getNome()
+                        : "Empate")
+                .orElse("—");
+    }
 }
+
+

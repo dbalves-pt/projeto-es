@@ -75,4 +75,18 @@ public class BilheteControlador {
                 .mapToDouble(Bilhete::getPrecoPago)
                 .sum();
     }
+
+    /**
+     * Receita de bilheteira reconhecida — apenas bilhetes VENDIDOS de jogos
+     * já TERMINADOS. Distinto de getReceitaTotalBilheteira(), que inclui
+     * vendas de jogos ainda calendarizados/em curso (receita "encaixada"
+     * mas não necessariamente "realizada" para efeitos de relatório final).
+     */
+    public double getReceitaBilheteiraJogosTerminados() {
+        return bilhetes.stream()
+                .filter(b -> b.getEstado() == Bilhete.Estado.VENDIDO)
+                .filter(b -> b.getJogo().getEstado() == Jogo.Estado.TERMINADO)
+                .mapToDouble(Bilhete::getPrecoPago)
+                .sum();
+    }
 }

@@ -20,4 +20,8 @@ public class FinanceiroControlador {
     public double getReceitaPatrocinios() {
         return patrocinioControlador.getReceitaTotalPatrocinios();
     }
+
+    public double getReceitaBilheteiraJogosTerminados() {
+        return bilheteControlador.getReceitaBilheteiraJogosTerminados();
+    }
 }

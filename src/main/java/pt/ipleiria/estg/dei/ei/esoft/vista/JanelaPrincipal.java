@@ -50,6 +50,9 @@ public class JanelaPrincipal extends JFrame {
     // ── Referência ao painel do calendário (para refrescar após acções) ────────
     private PainelCalendario painelCalendario;
 
+    // ── Referência ao JTabbedPane da dashboard (para refrescar a Página Principal) ──
+    private JTabbedPane tabsDashboard;
+
     private static final Color COR_FUNDO_AZUL      = new Color(0x9FE2FC);
     private static final Color COR_FUNDO_EXTERIOR  = new Color(0xF5F5F5);
     private static final Color COR_BRANCO          = Color.WHITE;
@@ -262,6 +265,7 @@ public class JanelaPrincipal extends JFrame {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setBackground(COR_FUNDO_AZUL);
         tabs.setFont(new Font("SansSerif", Font.BOLD, 14));
+        this.tabsDashboard = tabs;
 
         // Separador "Página Principal" — botões UC08 (Validar/Iniciar Torneio)
         tabs.addTab("Página Principal", criarPainelPaginaPrincipal(tabs));
@@ -292,105 +296,286 @@ public class JanelaPrincipal extends JFrame {
                 bilheteControlador, patrocinioControlador, financeiroControlador, jogoControlador);
         tabs.addTab("Receita", painelBilhetes);
 
-        tabs.setSelectedIndex(3); // abre no Calendário após gerar
+        tabs.setSelectedIndex(0); // abre no Dashboard após gerar
 
         add(tabs, BorderLayout.CENTER);
         revalidate();
         repaint();
     }
+// ══════════════════════════════════════════════════════════════════════════
+    //  Painel "Página Principal" (Dashboard Dinâmico)
+    // ══════════════════════════════════════════════════════════════════════════
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  Painel "Página Principal" com UC08 (Validar/Iniciar Torneio)
-    // ══════════════════════════════════════════════════════════════════════════
+    private JPanel painelColunasDashboard; // Variável global para podermos atualizar
 
     private JPanel criarPainelPaginaPrincipal(JTabbedPane tabs) {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(COR_FUNDO_EXTERIOR);
+        JPanel pMain = new JPanel(new BorderLayout());
+        pMain.setBackground(COR_BRANCO);
+        pMain.setBorder(new EmptyBorder(10, 20, 20, 20));
 
-        JPanel cartao = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(COR_FUNDO_AZUL);
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
-                g2.setColor(new Color(0x3498DB));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
-                g2.dispose();
+        // ── BARRA SUPERIOR COM BOTÃO DE ATUALIZAR ──
+        JPanel pTopo = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        pTopo.setBackground(COR_BRANCO);
+        JButton btnAtualizar = new JButton("↻ Atualizar Dashboard");
+        btnAtualizar.setBackground(new Color(0x3498DB));
+        btnAtualizar.setForeground(COR_BRANCO);
+        btnAtualizar.setFocusPainted(false);
+        btnAtualizar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAtualizar.addActionListener(e -> recarregarDadosDashboard(tabs));
+        pTopo.add(btnAtualizar);
+        pMain.add(pTopo, BorderLayout.NORTH);
+
+        // ── ÁREA DAS 3 COLUNAS ──
+        painelColunasDashboard = new JPanel(new GridBagLayout());
+        painelColunasDashboard.setBackground(COR_BRANCO);
+        pMain.add(painelColunasDashboard, BorderLayout.CENTER);
+
+        // Carrega os dados pela primeira vez
+        recarregarDadosDashboard(tabs);
+
+        return pMain;
+    }
+
+    private void recarregarDadosDashboard(JTabbedPane tabs) {
+        painelColunasDashboard.removeAll(); // Limpa as colunas antigas
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
+
+        // Coluna 1: Esquerda
+        gbc.gridx = 0; gbc.weightx = 0.25; gbc.insets = new Insets(0, 0, 0, 15);
+        painelColunasDashboard.add(criarColunaEsquerdaAutomatica(tabs), gbc);
+
+        // Coluna 2: Centro
+        gbc.gridx = 1; gbc.weightx = 0.50; gbc.insets = new Insets(0, 0, 0, 15);
+        painelColunasDashboard.add(criarColunaCentro(), gbc);
+
+        // Coluna 3: Direita
+        gbc.gridx = 2; gbc.weightx = 0.25; gbc.insets = new Insets(0, 0, 0, 0);
+        painelColunasDashboard.add(criarColunaDireitaAutomatica(), gbc);
+
+        // Força a interface a desenhar as novidades
+        painelColunasDashboard.revalidate();
+        painelColunasDashboard.repaint();
+    }
+
+    private JPanel criarColunaEsquerdaAutomatica(JTabbedPane tabs) {
+        JPanel painel = new JPanel();
+        painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
+        painel.setOpaque(false);
+
+        // 1. Bloco Patrocínios Dinâmico
+        JPanel pPatrocinios = criarCaixaCinza("Patrocínios");
+        pPatrocinios.add(criarLinhaDestaqueAmarela("TOTAL: " + financeiroControlador.getReceitaPatrocinios() + "€"));
+
+        // Vai buscar a lista de patrocínios ao controlador e cria as linhas automaticamente
+        java.util.List<pt.ipleiria.estg.dei.ei.esoft.modelo.Patrocinio> listaPatrocinios = patrocinioControlador.getPatrocinios();
+        if (listaPatrocinios.isEmpty()) {
+            pPatrocinios.add(criarLinhaBranca("Sem patrocínios registados."));
+        } else {
+            for (pt.ipleiria.estg.dei.ei.esoft.modelo.Patrocinio p : listaPatrocinios) {
+                pPatrocinios.add(criarLinhaBranca(p.getNomePatrocinador() + ": " + p.getValor() + "€"));
             }
-        };
-        cartao.setLayout(new BoxLayout(cartao, BoxLayout.Y_AXIS));
-        cartao.setOpaque(false);
-        cartao.setPreferredSize(new Dimension(400, 300));
-        cartao.setBorder(new EmptyBorder(24, 24, 24, 24));
+        }
 
-        JLabel titulo = new JLabel("Estado do Torneio");
-        titulo.setFont(new Font("SansSerif", Font.BOLD, 18));
-        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cartao.add(titulo);
-        cartao.add(Box.createVerticalStrut(16));
+        pPatrocinios.add(Box.createVerticalStrut(5));
+        JButton btnInserirPat = new JButton("Inserir Patrocínio...");
+        btnInserirPat.setBackground(new Color(0xDFCA38));
+        btnInserirPat.setOpaque(true); btnInserirPat.setBorderPainted(false);
+        // (Aqui podes ligar a ação de abrir o formulário de patrocínios)
+        pPatrocinios.add(btnInserirPat);
+        painel.add(pPatrocinios);
+        painel.add(Box.createVerticalStrut(20));
 
-        JLabel lblEstado = new JLabel("Estado: " + formatarEstadoTorneio());
-        lblEstado.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        lblEstado.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cartao.add(lblEstado);
-        cartao.add(Box.createVerticalStrut(20));
+        // 2. Bloco Bilheteira Dinâmico
+        JPanel pBilheteira = criarCaixaCinza("Bilheteira");
+        pBilheteira.add(criarLinhaBrancaTotal("TOTAL: " + financeiroControlador.getReceitaBilheteira() + "€"));
 
-        // 1. CRIAR OS DOIS BOTÕES PRIMEIRO
-        JButton btnValidar = criarBotaoFigma("Validar Calendário");
-        btnValidar.setMaximumSize(new Dimension(360, 38));
-        btnValidar.setEnabled(torneioControlador.podeValidar());
+        // Simulação dinâmica: Se tiveres um método de jogos com bilhetes vendidos, usarias aqui.
+        pBilheteira.add(criarLinhaBranca("(Receitas extraídas dos jogos)"));
+        painel.add(pBilheteira);
 
-        JButton btnIniciar = criarBotaoFigma("Iniciar Torneio");
-        btnIniciar.setMaximumSize(new Dimension(360, 38));
-        btnIniciar.setEnabled(torneioControlador.podeIniciar());
+        painel.add(Box.createVerticalGlue()); // Empurra o botão Gerar para o fundo
 
-        // 2. AÇÃO DO BOTÃO VALIDAR
-        btnValidar.addActionListener(e -> {
+        // 3. Botão Gerar / Validar Calendário
+        JButton btnGerarCal = new JButton("Gerar / Validar Calendário");
+        btnGerarCal.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnGerarCal.setBackground(new Color(0xD3D3D3));
+        btnGerarCal.setOpaque(true); btnGerarCal.setBorderPainted(false);
+        btnGerarCal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        btnGerarCal.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        btnGerarCal.addActionListener(e -> {
             try {
                 java.util.List<String> conflitos = torneioControlador.validarCalendario();
                 if (conflitos.isEmpty()) {
                     torneioControlador.confirmarValidacao();
-                    lblEstado.setText("Estado: " + formatarEstadoTorneio());
-                    btnValidar.setEnabled(false);
-
-                    // --> Ativa o botão de Iniciar <--
-                    btnIniciar.setEnabled(true);
-
-                    JOptionPane.showMessageDialog(p,
-                            "Calendário validado sem conflitos!\nPode agora iniciar o torneio.",
-                            "Validação Concluída", JOptionPane.INFORMATION_MESSAGE);
+                    torneioControlador.iniciarTorneio();
+                    JOptionPane.showMessageDialog(this, "Calendário validado e torneio iniciado!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    tabs.setSelectedIndex(3); // Salta para Calendário após iniciar
                 } else {
-                    StringBuilder sb = new StringBuilder("Conflitos encontrados:\n");
-                    conflitos.forEach(c -> sb.append("• ").append(c).append("\n"));
-                    JOptionPane.showMessageDialog(p, sb.toString(),
-                            "Conflitos no Calendário", JOptionPane.WARNING_MESSAGE);
+                    StringBuilder erro = new StringBuilder("Conflitos no calendário:\n\n");
+                    for (String c : conflitos) erro.append("• ").append(c).append("\n");
+                    JOptionPane.showMessageDialog(this, erro.toString(), "Erro", JOptionPane.WARNING_MESSAGE);
                 }
             } catch (IllegalStateException ex) {
-                JOptionPane.showMessageDialog(p, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Aviso", JOptionPane.WARNING_MESSAGE);
             }
         });
+        painel.add(btnGerarCal);
 
-        // 3. AÇÃO DO BOTÃO INICIAR
-        btnIniciar.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(p,
-                    "Tem a certeza que quer iniciar o torneio?\nEsta acção não pode ser revertida.",
-                    "Iniciar Torneio", JOptionPane.YES_NO_OPTION);
-            if (r == JOptionPane.YES_OPTION) {
-                torneioControlador.iniciarTorneio();
-                lblEstado.setText("Estado: " + formatarEstadoTorneio());
-                btnIniciar.setEnabled(false);
-                tabs.setSelectedIndex(3); // navega para Calendário
-                if (painelCalendario != null) painelCalendario.atualizar();
+        return painel;
+    }
+
+    private JPanel criarColunaCentro() {
+        // (ESTE MÉTODO MANTÉM-SE EXATAMENTE IGUAL AO QUE TE DEI ANTES - DESENHO DA ÁRVORE)
+        JPanel painel = criarCaixaCinza("Eliminatória");
+        painel.setLayout(new BorderLayout());
+        painel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JPanel canvasBranco = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.BLACK);
+                g2.setStroke(new BasicStroke(2));
+
+                int w = getWidth(); int h = getHeight();
+                int x1 = 20, x2 = w / 3, x3 = (w / 3) * 2, x4 = w - 20;
+
+                int[] yPos = {h/8, (h/8)*3, (h/8)*5, (h/8)*7};
+                for (int y : yPos) {
+                    g2.drawLine(x1, y - 20, x2, y - 20);
+                    g2.drawLine(x1, y + 20, x2, y + 20);
+                    g2.drawLine(x2, y - 20, x2, y + 20);
+                }
+                g2.drawLine(x2, yPos[0], x3, yPos[0]);
+                g2.drawLine(x2, yPos[1], x3, yPos[1]);
+                g2.drawLine(x3, yPos[0], x3, yPos[1]);
+
+                g2.drawLine(x2, yPos[2], x3, yPos[2]);
+                g2.drawLine(x2, yPos[3], x3, yPos[3]);
+                g2.drawLine(x3, yPos[2], x3, yPos[3]);
+
+                int meio1 = (yPos[0] + yPos[1]) / 2;
+                int meio2 = (yPos[2] + yPos[3]) / 2;
+                g2.drawLine(x3, meio1, x4, meio1);
+                g2.drawLine(x3, meio2, x4, meio2);
+                g2.drawLine(x4, meio1, x4, meio2);
+                g2.drawLine(x4, h/2, w, h/2);
             }
-        });
+        };
+        canvasBranco.setBackground(COR_BRANCO);
+        painel.add(canvasBranco, BorderLayout.CENTER);
+        return painel;
+    }
 
-        // 4. ADICIONAR TUDO AO CARTÃO (VISUAL)
-        cartao.add(btnValidar);
-        cartao.add(Box.createVerticalStrut(10));
-        cartao.add(btnIniciar);
+    private JPanel criarColunaDireitaAutomatica() {
+        JPanel painel = new JPanel();
+        painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
+        painel.setOpaque(false);
 
-        p.add(cartao);
+        // AGORA É DINÂMICO! Puxa os dados dos controladores
+        String vencedor = jogoControlador.obterVencedorTorneio();
+        painel.add(criarCartaoEstatistica("Vencedor", "", vencedor, ""));
+        painel.add(Box.createVerticalStrut(15));
+
+        String marcNome = jogoControlador.obterNomeMelhorMarcador();
+        String marcGolos = jogoControlador.obterGolosMelhorMarcador();
+        painel.add(criarCartaoEstatistica("Melhor Marcador", "Golos", marcNome, marcGolos));
+        painel.add(Box.createVerticalStrut(15));
+
+        String assisNome = jogoControlador.obterNomeMaisAssistencias();
+        String assisNum = jogoControlador.obterNumeroMaisAssistencias();
+        painel.add(criarCartaoEstatistica("Jogador com mais assistências", "Assistências", assisNome, assisNum));
+        painel.add(Box.createVerticalStrut(15));
+
+        String defNome = jogoControlador.obterEquipaMelhorDefesa();
+        String defGolos = jogoControlador.obterGolosSofridosMelhorDefesa();
+        painel.add(criarCartaoEstatistica("Equipa com a melhor defesa", "Golos sofridos", defNome, defGolos));
+        painel.add(Box.createVerticalStrut(15));
+
+        String atqNome = jogoControlador.obterEquipaMelhorAtaque();
+        String atqGolos = jogoControlador.obterGolosMarcadosMelhorAtaque();
+        painel.add(criarCartaoEstatistica("Equipa com o melhor ataque", "Golos marcados", atqNome, atqGolos));
+
+        return painel;
+    }
+
+    // (MANTÉM OS MÉTODOS criarCaixaCinza, criarCartaoEstatistica, criarLinha... AQUI POR BAIXO)
+
+    // ── COMPONENTES VISUAIS (DESIGN SYSTEM) ───────────────────────────────────
+
+    private JPanel criarCaixaCinza(String titulo) {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setBackground(new Color(0xE0E0E0)); // Cinza fundo
+        p.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(0xCCCCCC), 1, true),
+                new EmptyBorder(15, 15, 15, 15)
+        ));
+
+        JLabel lblTitulo = new JLabel(titulo);
+        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        p.add(lblTitulo);
+        p.add(Box.createVerticalStrut(10));
         return p;
+    }
+
+    private JPanel criarCartaoEstatistica(String tituloL, String tituloR, String valorL, String valorR) {
+        JPanel cartao = new JPanel(new BorderLayout());
+        cartao.setBackground(new Color(0xE0E0E0));
+        cartao.setBorder(new EmptyBorder(5, 5, 5, 5));
+        cartao.setMaximumSize(new Dimension(300, 80));
+
+        // Metade superior amarela
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(new Color(0xDFCA38));
+        top.setBorder(new EmptyBorder(5, 10, 5, 10));
+        JLabel lblTopL = new JLabel("<html><b>" + tituloL.replace(" ", "<br>") + "</b></html>");
+        JLabel lblTopR = new JLabel("<html><b>" + tituloR.replace(" ", "<br>") + "</b></html>");
+        top.add(lblTopL, BorderLayout.WEST);
+        top.add(lblTopR, BorderLayout.EAST);
+
+        // Metade inferior branca
+        JPanel bot = new JPanel(new BorderLayout());
+        bot.setBackground(COR_BRANCO);
+        bot.setBorder(new EmptyBorder(5, 10, 5, 10));
+        bot.add(new JLabel(valorL), BorderLayout.WEST);
+        bot.add(new JLabel(valorR), BorderLayout.EAST);
+
+        cartao.add(top, BorderLayout.NORTH);
+        cartao.add(bot, BorderLayout.CENTER);
+        return cartao;
+    }
+
+    private JLabel criarLinhaDestaqueAmarela(String texto) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setOpaque(true);
+        lbl.setBackground(new Color(0xDFCA38));
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 12));
+        lbl.setBorder(new EmptyBorder(5, 10, 5, 10));
+        lbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        return lbl;
+    }
+
+    private JLabel criarLinhaBranca(String texto) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setOpaque(true);
+        lbl.setBackground(COR_BRANCO);
+        lbl.setBorder(new EmptyBorder(5, 10, 5, 10));
+        lbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        return lbl;
+    }
+
+    private JLabel criarLinhaBrancaTotal(String texto) {
+        JLabel lbl = criarLinhaBranca(texto);
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 12));
+        return lbl;
     }
 
     private String formatarEstadoTorneio() {
@@ -468,9 +653,19 @@ public class JanelaPrincipal extends JFrame {
         return btn;
     }
 
+    /**
+     * Callback central de reatividade — invocado a partir de qualquer ecrã
+     * filho (FormularioEvento, PainelEstatisticasJogo, FormularioDetalhesJogo,
+     * PainelCalendario) sempre que um Golo, Cartão, Início ou Fim de Jogo é
+     * registado. Atualiza a aba "Jogadores" e a Dashboard "Página Principal"
+     * num único ponto, para não haver telas desatualizadas.
+     */
     public void atualizarEstatisticas() {
         if (painelEstatisticas != null) {
             painelEstatisticas.atualizar();
+        }
+        if (tabsDashboard != null && painelColunasDashboard != null) {
+            recarregarDadosDashboard(tabsDashboard);
         }
     }
 }
