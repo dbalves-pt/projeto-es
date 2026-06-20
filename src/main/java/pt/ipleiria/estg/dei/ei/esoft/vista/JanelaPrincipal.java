@@ -37,6 +37,7 @@ public class JanelaPrincipal extends JFrame {
 
 
 
+
     // ── Referência ao painel de estatísticas do torneio (para atualizar ao mudar de aba) ──
     private PainelEstatisticasTorneio painelEstatisticas;
     private int indiceJogadores;
@@ -495,18 +496,17 @@ public class JanelaPrincipal extends JFrame {
         tabs.setEnabledAt(3, false);
         // ---------------------------------------------------------------
 
+        // Separador "Jogadores" (UC17)
         painelEstatisticas = new PainelEstatisticasTorneio();
-        // Separador "Jogadores" — stub (estatísticas UC17, fora do âmbito UC09-12)
-        tabs.addTab("Jogadores", new PainelEstatisticasTorneio());
+        tabs.addTab("Jogadores", painelEstatisticas);
 
         tabs.addChangeListener(e -> {
-            PainelEstatisticasTorneio painelEstatisticas;
-            painelEstatisticas = new PainelEstatisticasTorneio();
-            if (tabs.getSelectedIndex() == indiceJogadores && painelEstatisticas != null) {
+            // O separador "Jogadores" é o índice 4 (0=Página Principal, 1=Equipas, 2=Estádios, 3=Calendário, 4=Jogadores)
+            if (tabs.getSelectedIndex() == 4 && painelEstatisticas != null) {
                 painelEstatisticas.atualizar();
             }
         });
-
+ 
         PainelBilhetesPatrocinios painelBilhetes = new PainelBilhetesPatrocinios(
                 bilheteControlador, patrocinioControlador, financeiroControlador, jogoControlador);
         tabs.addTab("Receita", painelBilhetes);

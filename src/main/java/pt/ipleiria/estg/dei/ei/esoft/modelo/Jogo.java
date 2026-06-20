@@ -104,7 +104,9 @@ public class Jogo {
      *                                   JOGADOR_JA_EXPULSO conforme as regras do jogo.
      */
     public void registarEvento(EventoJogo evento) {
-        if (estado != Estado.COMECADO)
+        // Antes era != Estado.COMECADO. Agora bloqueamos apenas se estiver CALENDARIZADO,
+        // permitindo assim registar em COMEÇADO e TERMINADO.
+        if (estado == Estado.CALENDARIZADO)
             throw new IllegalStateException("JOGO_NAO_COMECADO");
         if (!envolveEquipa(evento.getEquipa()))
             throw new IllegalArgumentException("EQUIPA_NAO_PARTICIPA_NO_JOGO");
@@ -116,6 +118,15 @@ public class Jogo {
             throw new IllegalArgumentException("JOGADOR_JA_EXPULSO");
 
         eventos.add(evento);
+        recalcularMarcador();
+    }
+
+    /** Remove um evento do jogo e recalcula o marcador se necessário. */
+    public void removerEvento(EventoJogo evento) {
+        if (!eventos.contains(evento))
+            throw new IllegalArgumentException("EVENTO_NAO_PERTENCE_AO_JOGO");
+
+        eventos.remove(evento);
         recalcularMarcador();
     }
 
@@ -162,11 +173,16 @@ public class Jogo {
      * recalcula o marcador. Usado pelo EventoControlador, que valida
      * previamente o prazo de correção.
      */
-    public void corrigirEvento(EventoJogo evento, EventoJogo.Tipo novoTipo, Equipa novaEquipa,
-                                Jogador novoJogador, int novoMinuto) {
+    public void corrigirEvento(EventoJogo evento, EventoJogo.Tipo novoTipo, Equipa novaEquipa, Jogador novoJogador, int novoMinuto) {
+        corrigirEvento(evento, novoTipo, novaEquipa, novoJogador, novoMinuto, null);
+    }
+
+    public void corrigirEvento(EventoJogo evento, EventoJogo.Tipo novoTipo,
+                               Equipa novaEquipa, Jogador novoJogador,
+                               int novoMinuto, Jogador novaAssistencia) {
         if (!eventos.contains(evento))
             throw new IllegalArgumentException("EVENTO_NAO_PERTENCE_AO_JOGO");
-        evento.aplicarCorrecao(novoTipo, novaEquipa, novoJogador, novoMinuto);
+        evento.aplicarCorrecao(novoTipo, novaEquipa, novoJogador, novoMinuto, novaAssistencia);
         recalcularMarcador();
     }
 

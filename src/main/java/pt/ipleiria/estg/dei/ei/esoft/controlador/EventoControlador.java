@@ -61,8 +61,23 @@ public class EventoControlador {
      *
      * @throws IllegalStateException JOGO_NAO_COMECADO se o jogo não estiver em curso.
      */
+
+    // ── MÉTODOS DE COMPATIBILIDADE PARA OS TESTES ──
+
     public void registarEvento(Jogo jogo, String descricaoTipo, Equipa equipa,
-                                Jogador jogador, String minutoStr) {
+                               Jogador jogador, String minutoStr) {
+        // Chama o método novo passando 'null' na assistência
+        registarEvento(jogo, descricaoTipo, equipa, jogador, minutoStr, null);
+    }
+
+    public void corrigirEvento(Jogo jogo, EventoJogo evento, String descricaoTipo,
+                               Equipa equipa, Jogador jogador, String minutoStr) {
+        // Chama o método novo passando 'null' na assistência
+        corrigirEvento(jogo, evento, descricaoTipo, equipa, jogador, minutoStr, null);
+    }
+
+    public void registarEvento(Jogo jogo, String descricaoTipo, Equipa equipa,
+                               Jogador jogador, String minutoStr, Jogador assistencia) {
 
         if (jogo == null) throw new IllegalArgumentException("JOGO_NULO");
 
@@ -81,7 +96,7 @@ public class EventoControlador {
 
         // A validação de pertença à equipa / aptidão / expulsão é feita no modelo Jogo,
         // que lança os respectivos códigos de erro (JOGADOR_NAO_PERTENCE_EQUIPA, etc.).
-        EventoJogo evento = new EventoJogo(tipo, equipa, jogador, minuto);
+        EventoJogo evento = new EventoJogo(tipo, equipa, jogador, minuto, assistencia);
         jogo.registarEvento(evento);
     }
 
@@ -105,7 +120,7 @@ public class EventoControlador {
      *                                   em caso de dados inválidos (CA 6.1).
      */
     public void corrigirEvento(Jogo jogo, EventoJogo evento, String descricaoTipo,
-                                Equipa equipa, Jogador jogador, String minutoStr) {
+                               Equipa equipa, Jogador jogador, String minutoStr, Jogador assistencia) {
 
         if (jogo == null) throw new IllegalArgumentException("JOGO_NULO");
         if (evento == null) throw new IllegalArgumentException("EVENTO_NULO");
@@ -127,7 +142,21 @@ public class EventoControlador {
         Tipo tipo = parsarTipo(descricaoTipo);
         int minuto = parsarMinuto(minutoStr);
 
-        jogo.corrigirEvento(evento, tipo, equipa, jogador, minuto);
+        jogo.corrigirEvento(evento, tipo, equipa, jogador, minuto, assistencia);
+    }
+
+    /**
+     * Remove um evento, desde que esteja dentro do prazo permitido de 24h.
+     */
+    public void removerEvento(Jogo jogo, EventoJogo evento) {
+        if (jogo == null) throw new IllegalArgumentException("JOGO_NULO");
+        if (evento == null) throw new IllegalArgumentException("EVENTO_NULO");
+
+        // Usa a mesma validação de 24h da edição!
+        if (!podeCorrigir(evento))
+            throw new IllegalStateException("PRAZO_EXPIRADO");
+
+        jogo.removerEvento(evento);
     }
 
     // ── Auxiliares para a Vista ───────────────────────────────────────────────
@@ -178,8 +207,9 @@ public class EventoControlador {
         for (Jogo jogo : Torneio.getInstancia().getJogos()) {
             if (jogo.getEstado() != Jogo.Estado.TERMINADO) continue;
             for (EventoJogo ev : jogo.getEventos()) {
-                if (ev.getTipo() == EventoJogo.Tipo.ASSISTENCIA) {
-                    contagem.merge(ev.getJogador(), 1, Integer::sum);
+                // NOVA LÓGICA: Procura golos que tenham uma assistência associada
+                if (ev.getTipo() == EventoJogo.Tipo.GOLO && ev.getAssistencia() != null) {
+                    contagem.merge(ev.getAssistencia(), 1, Integer::sum);
                 }
             }
         }

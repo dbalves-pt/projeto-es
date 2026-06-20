@@ -64,6 +64,12 @@ public class Torneio {
     public boolean gruposGerados() { return estado != Estado.INICIAL; }
 
     /** UC01 — Adicionar equipa. */
+    public void adicionarJogo(Jogo jogo) {
+        if (jogo != null) {
+            this.jogos.add(jogo);
+        }
+    }
+
     public void adicionarEquipa(Equipa equipa) {
         if (gruposGerados())
             throw new IllegalStateException("GRUPOS_GERADOS");

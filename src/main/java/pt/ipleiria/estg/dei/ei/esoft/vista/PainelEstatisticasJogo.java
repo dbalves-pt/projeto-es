@@ -4,33 +4,20 @@ import pt.ipleiria.estg.dei.ei.esoft.controlador.EventoControlador;
 import pt.ipleiria.estg.dei.ei.esoft.controlador.JogoControlador;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.EventoJogo;
-import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static pt.ipleiria.estg.dei.ei.esoft.vista.FormularioEquipa.*;
 
-/**
- * Vista UC10 (Registar Evento de Jogo), UC11 (Terminar Jogo) e
- * UC12 (Corrigir Evento de Jogo).
- *
- * Layout:
- *   • Cabeçalho: marcador + nome das equipas.
- *   • Tabela de eventos registados (Minuto, Tipo, Equipa, Jogador, [Editar]).
- *   • Botão 'Novo Evento' (apenas se jogo COMEÇADO — UC10).
- *   • Botão 'Terminar Jogo' (apenas se jogo COMEÇADO — UC11).
- *   • Nota de prazo de correcção (UC12).
- *
- * ⚠ Conforme os avisos do protótipo, este ecrã adiciona os controlos
- *   'Novo Evento', 'Registar Evento', 'Terminar Jogo' e os botões
- *   'Editar' por linha de evento, ausentes no protótipo original.
- */
 public class PainelEstatisticasJogo extends JDialog {
 
     private final JogoControlador   jogoControlador;
@@ -39,25 +26,41 @@ public class PainelEstatisticasJogo extends JDialog {
     private final Runnable          aoAtualizar;
 
     private JLabel              lblMarcador;
+
+    // Gestão de Cartões (Páginas)
+    private CardLayout          cardLayout;
+    private JPanel              painelCartoes;
+
+    // Tabela Página 1 (Eventos)
     private DefaultTableModel   modeloEventos;
     private JTable              tabelaEventos;
-    private JButton             btnNovoEvento;
-    private JButton             btnTerminar;
     private List<EventoJogo>    eventosListados;
 
+    // Tabela Página 2 (Resumo)
+    private DefaultTableModel   modeloResumo;
+    private JTable              tabelaResumo;
+
+    // Botões
+    private JButton             btnNovoEvento;
+    private JButton             btnTerminar;
+    private JButton             btnMudarVista;
+    private boolean             vistaEventos = true;
+
     public PainelEstatisticasJogo(Window owner,
-                                   JogoControlador jogoControlador,
-                                   EventoControlador eventoControlador,
-                                   Jogo jogo,
-                                   Runnable aoAtualizar) {
+                                  JogoControlador jogoControlador,
+                                  EventoControlador eventoControlador,
+                                  Jogo jogo,
+                                  Runnable aoAtualizar) {
         super(owner, "Estatísticas do Jogo", ModalityType.APPLICATION_MODAL);
         this.jogoControlador   = jogoControlador;
         this.eventoControlador = eventoControlador;
         this.jogo              = jogo;
         this.aoAtualizar       = aoAtualizar;
+
         construirUI();
         atualizar();
-        setSize(680, 560);
+
+        setSize(720, 580);
         setResizable(true);
         setLocationRelativeTo(owner);
     }
@@ -72,11 +75,18 @@ public class PainelEstatisticasJogo extends JDialog {
         setContentPane(raiz);
 
         raiz.add(criarCabecalho(), BorderLayout.NORTH);
-        raiz.add(criarPainelCentral(), BorderLayout.CENTER);
+
+        // O Centro agora usa o CardLayout para ter 2 páginas
+        cardLayout = new CardLayout();
+        painelCartoes = new JPanel(cardLayout);
+        painelCartoes.setBackground(COR_BRANCO);
+
+        painelCartoes.add(criarPainelEventos(), "EVENTOS");
+        painelCartoes.add(criarPainelResumo(), "RESUMO");
+
+        raiz.add(painelCartoes, BorderLayout.CENTER);
         raiz.add(criarRodape(), BorderLayout.SOUTH);
     }
-
-    // ── Cabeçalho: marcador ───────────────────────────────────────────────────
 
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new GridBagLayout());
@@ -87,16 +97,16 @@ public class PainelEstatisticasJogo extends JDialog {
         interno.setOpaque(false);
 
         JLabel lblCasa = new JLabel(jogo.getEquipaCasa().getNome(), SwingConstants.RIGHT);
-        lblCasa.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblCasa.setFont(new Font("SansSerif", Font.BOLD, 18));
         lblCasa.setForeground(Color.WHITE);
 
         lblMarcador = new JLabel("0 — 0", SwingConstants.CENTER);
-        lblMarcador.setFont(new Font("SansSerif", Font.BOLD, 32));
+        lblMarcador.setFont(new Font("SansSerif", Font.BOLD, 36));
         lblMarcador.setForeground(Color.WHITE);
         lblMarcador.setPreferredSize(new Dimension(120, 40));
 
         JLabel lblFora = new JLabel(jogo.getEquipaFora().getNome(), SwingConstants.LEFT);
-        lblFora.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblFora.setFont(new Font("SansSerif", Font.BOLD, 18));
         lblFora.setForeground(Color.WHITE);
 
         interno.add(lblCasa,    BorderLayout.WEST);
@@ -106,24 +116,21 @@ public class PainelEstatisticasJogo extends JDialog {
         return p;
     }
 
-    // ── Centro: tabela de eventos ─────────────────────────────────────────────
-
-    private JPanel criarPainelCentral() {
+    // ── PÁGINA 1: Tabela de Eventos ───────────────────────────────────────────
+    private JPanel criarPainelEventos() {
         JPanel p = new JPanel(new BorderLayout());
-        p.setBackground(COR_BRANCO);
+        p.setBackground(new Color(0xB3E5FC)); // Azul clarinho do teu design
         p.setBorder(new EmptyBorder(16, 24, 8, 24));
 
         JLabel lblTitulo = new JLabel("Eventos do Jogo");
-        lblTitulo.setFont(FONTE_TITULO);
+        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 20));
         lblTitulo.setBorder(new EmptyBorder(0, 0, 10, 0));
         p.add(lblTitulo, BorderLayout.NORTH);
 
-        String[] colunas = {"Min.", "Tipo", "Equipa", "Jogador", "Editar"};
+        // NOVA COLUNA "REMOVER"
+        String[] colunas = {"Min.", "Tipo", "Equipa", "Jogador", "Editar", "Remover"};
         modeloEventos = new DefaultTableModel(colunas, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return col == 4; }
-            @Override public Class<?> getColumnClass(int col) {
-                return col == 4 ? JButton.class : String.class;
-            }
+            @Override public boolean isCellEditable(int row, int col) { return col == 4 || col == 5; }
         };
 
         tabelaEventos = new JTable(modeloEventos);
@@ -132,89 +139,189 @@ public class PainelEstatisticasJogo extends JDialog {
         tabelaEventos.getTableHeader().setBackground(new Color(0xBDBDBD));
         tabelaEventos.getTableHeader().setFont(FONTE_HEADER);
         tabelaEventos.setFont(FONTE_NORMAL);
+
         tabelaEventos.getColumnModel().getColumn(4).setMaxWidth(70);
-        tabelaEventos.getColumnModel().getColumn(4).setMinWidth(70);
+        tabelaEventos.getColumnModel().getColumn(5).setMaxWidth(80);
         tabelaEventos.getColumnModel().getColumn(0).setMaxWidth(50);
 
-        // Renderizador e editor para o botão "Editar" na coluna 4
-        tabelaEventos.getColumnModel().getColumn(4).setCellRenderer(new BotaoRenderer());
-        tabelaEventos.getColumnModel().getColumn(4).setCellEditor(
-                new BotaoEditor(new JCheckBox(), this::editarEventoDaLinha));
+        tabelaEventos.getColumnModel().getColumn(4).setCellRenderer(new BotaoRenderer(new Color(0x1565C0)));
+        tabelaEventos.getColumnModel().getColumn(4).setCellEditor(new BotaoEditor(new JCheckBox(), this::editarEventoDaLinha, "Editar"));
 
-        // Seleção de linha também activa o botão
-        tabelaEventos.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                int col = tabelaEventos.columnAtPoint(e.getPoint());
-                if (col == 4) {
-                    int linha = tabelaEventos.rowAtPoint(e.getPoint());
-                    editarEventoDaLinha(linha);
-                }
-            }
-        });
+        tabelaEventos.getColumnModel().getColumn(5).setCellRenderer(new BotaoRenderer(new Color(0xC62828))); // Vermelho para remover
+        tabelaEventos.getColumnModel().getColumn(5).setCellEditor(new BotaoEditor(new JCheckBox(), this::removerEventoDaLinha, "Remover"));
 
         JScrollPane scroll = new JScrollPane(tabelaEventos);
-        scroll.setBorder(new LineBorder(COR_BORDA, 1));
-        scroll.getViewport().setBackground(COR_BRANCO);
+        scroll.setBorder(new LineBorder(Color.WHITE, 10, true)); // Fundo branco arredondado na lista
+        scroll.getViewport().setBackground(Color.WHITE);
         p.add(scroll, BorderLayout.CENTER);
 
         return p;
     }
 
-    // ── Rodapé: botões de acção ───────────────────────────────────────────────
+    // ── PÁGINA 2: Resumo de Estatísticas ──────────────────────────────────────
+    private JPanel criarPainelResumo() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(new Color(0xB3E5FC));
+        p.setBorder(new EmptyBorder(16, 24, 8, 24));
 
-    private JPanel criarRodape() {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 12));
-        p.setBackground(COR_BRANCO);
-        p.setBorder(new EmptyBorder(0, 12, 8, 12));
+        JLabel lblTitulo = new JLabel("Estatísticas do Jogo");
+        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 20));
+        lblTitulo.setBorder(new EmptyBorder(0, 0, 10, 0));
+        p.add(lblTitulo, BorderLayout.NORTH);
 
-        btnNovoEvento = criarBotaoAcao("Novo Evento", new Color(0x1565C0));
-        btnNovoEvento.addActionListener(e -> abrirFormularioNovoEvento());
-        p.add(btnNovoEvento);
+        String eqA = jogo.getEquipaCasa().getNome();
+        String eqB = jogo.getEquipaFora().getNome();
 
-        btnTerminar = criarBotaoAcao("Terminar Jogo", new Color(0xC62828));
-        btnTerminar.addActionListener(e -> aoTerminarJogo());
-        p.add(btnTerminar);
+        modeloResumo = new DefaultTableModel(new String[]{eqA, "—", eqB}, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
 
-        JButton btnFechar = criarBotaoAcao("Fechar", new Color(0x546E7A));
-        btnFechar.addActionListener(e -> dispose());
-        p.add(btnFechar);
+        tabelaResumo = new JTable(modeloResumo);
+        tabelaResumo.setRowHeight(35);
+        tabelaResumo.setShowGrid(false);
+        // Forçar a cor do cabeçalho com um renderizador próprio
+        tabelaResumo.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                lbl.setBackground(new Color(0x9E9E9E)); // Fundo cinzento
+                lbl.setForeground(Color.WHITE);         // Letra branca
+                lbl.setFont(new Font("SansSerif", Font.BOLD, 14));
+                lbl.setHorizontalAlignment(SwingConstants.CENTER);
+                lbl.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, Color.WHITE)); // Linha separadora
+                return lbl;
+            }
+        });
+        tabelaResumo.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        // Centralizar texto da tabela
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for(int i=0; i<3; i++) tabelaResumo.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+
+        JScrollPane scroll = new JScrollPane(tabelaResumo);
+        scroll.setBorder(new LineBorder(Color.WHITE, 10, true));
+        scroll.getViewport().setBackground(Color.WHITE);
+        p.add(scroll, BorderLayout.CENTER);
 
         return p;
     }
 
+    // ── Rodapé ────────────────────────────────────────────────────────────────
+    private JPanel criarRodape() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(new Color(0xB3E5FC));
+        p.setBorder(new EmptyBorder(0, 24, 16, 24));
+
+        JPanel pBotoesEsquerda = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pBotoesEsquerda.setOpaque(false);
+
+        btnNovoEvento = criarBotaoAcao("Novo Evento", new Color(0x1565C0));
+        btnNovoEvento.addActionListener(e -> abrirFormularioNovoEvento());
+        pBotoesEsquerda.add(btnNovoEvento);
+
+        btnTerminar = criarBotaoAcao("Terminar Jogo", new Color(0xC62828));
+        btnTerminar.addActionListener(e -> aoTerminarJogo());
+        pBotoesEsquerda.add(btnTerminar);
+
+        JPanel pBotoesDireita = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pBotoesDireita.setOpaque(false);
+
+        // Botão para navegar entre as vistas
+        btnMudarVista = criarBotaoAcao("Ver Resumo ►", new Color(0x00695C));
+        btnMudarVista.addActionListener(e -> alternarVista());
+        pBotoesDireita.add(btnMudarVista);
+
+        JButton btnFechar = criarBotaoAcao("Fechar", Color.WHITE);
+        btnFechar.setForeground(Color.BLACK); // O botão de fechar branco do teu design
+        btnFechar.addActionListener(e -> dispose());
+        pBotoesDireita.add(btnFechar);
+
+        p.add(pBotoesEsquerda, BorderLayout.WEST);
+        p.add(pBotoesDireita, BorderLayout.EAST);
+
+        return p;
+    }
+
+    private void alternarVista() {
+        if (vistaEventos) {
+            cardLayout.show(painelCartoes, "RESUMO");
+            btnMudarVista.setText("◄ Voltar aos Eventos");
+        } else {
+            cardLayout.show(painelCartoes, "EVENTOS");
+            btnMudarVista.setText("Ver Resumo ►");
+        }
+        vistaEventos = !vistaEventos;
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
-    //  Actualização
+    //  Actualização de Dados
     // ══════════════════════════════════════════════════════════════════════════
 
     public void atualizar() {
-        // Marcador
         lblMarcador.setText(jogo.getGolosCasa() + " — " + jogo.getGolosFora());
 
-        // Tabela de eventos
+        boolean terminado = jogo.getEstado() == Jogo.Estado.TERMINADO;
+        boolean emCurso = jogo.getEstado() == Jogo.Estado.COMECADO;
+
+        // Regra de inserção: Em curso ou (Terminado e dentro das 24h)
+        boolean podeModificarTerminado = terminado && jogo.getHoraFim() != null
+                && ChronoUnit.HOURS.between(jogo.getHoraFim(), LocalDateTime.now()) < EventoControlador.PRAZO_CORRECAO_HORAS;
+
+        btnNovoEvento.setEnabled(emCurso || podeModificarTerminado);
+        btnTerminar.setEnabled(emCurso);
+
+        // Atualizar Tabela 1 (Eventos)
         modeloEventos.setRowCount(0);
         eventosListados = eventoControlador.getEventos(jogo);
         for (EventoJogo ev : eventosListados) {
-            boolean podeEditar = jogo.getEstado() == Jogo.Estado.TERMINADO
-                    && eventoControlador.podeCorrigir(ev);
+            boolean podeEditar = emCurso || (terminado && eventoControlador.podeCorrigir(ev));
+
             modeloEventos.addRow(new Object[]{
                     ev.getMinuto() + "'",
                     ev.getTipo().toString(),
                     ev.getEquipa().getNome(),
                     ev.getJogador().getNomeCompleto(),
-                    podeEditar ? "Editar" : (ev.isCorrigido() ? "✓" : "—")
+                    podeEditar ? "Editar" : "—",
+                    podeEditar ? "X" : "—"
             });
         }
 
-        // Botões
-        boolean emCurso = jogo.getEstado() == Jogo.Estado.COMECADO;
-        btnNovoEvento.setEnabled(emCurso);
-        btnTerminar.setEnabled(emCurso);
-
+        // Atualizar Tabela 2 (Resumo Total)
+        atualizarResumoEstatisticas();
         repaint();
     }
 
+    private void atualizarResumoEstatisticas() {
+        int[] golos = {0,0}, remates = {0,0}, defesas = {0,0};
+        int[] passes = {0,0}, amarelo = {0,0}, vermelho = {0,0};
+
+        Equipa casa = jogo.getEquipaCasa();
+
+        for (EventoJogo ev : jogo.getEventos()) {
+            int i = (ev.getEquipa() == casa) ? 0 : 1;
+            switch(ev.getTipo()) {
+                case GOLO -> golos[i]++;
+                case REMATES -> remates[i]++;
+                case DEFESA -> defesas[i]++;
+                case PASSES -> passes[i]++;
+                case CARTAO_AMARELO -> amarelo[i]++;
+                case CARTAO_VERMELHO -> vermelho[i]++;
+                default -> {}
+            }
+        }
+
+        modeloResumo.setRowCount(0);
+        modeloResumo.addRow(new Object[]{golos[0], "Golos", golos[1]});
+        modeloResumo.addRow(new Object[]{remates[0], "Remates", remates[1]});
+        modeloResumo.addRow(new Object[]{defesas[0], "Defesas (Baliza)", defesas[1]});
+        modeloResumo.addRow(new Object[]{amarelo[0], "Cartões Amarelos", amarelo[1]});
+        modeloResumo.addRow(new Object[]{vermelho[0], "Cartões Vermelhos", vermelho[1]});
+        modeloResumo.addRow(new Object[]{passes[0], "Passes", passes[1]});
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
-    //  UC10 — Novo Evento
+    //  Acções de Controlador
     // ══════════════════════════════════════════════════════════════════════════
 
     private void abrirFormularioNovoEvento() {
@@ -225,64 +332,30 @@ public class PainelEstatisticasJogo extends JDialog {
         form.setVisible(true);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  UC11 — Terminar Jogo
-    // ══════════════════════════════════════════════════════════════════════════
-
     private void aoTerminarJogo() {
-        // CA 3.2 — Inconsistência nos eventos: alerta
         if (jogoControlador.haInconsistenciaNosEventos(jogo)) {
-            int r = JOptionPane.showConfirmDialog(this,
-                    "Existem inconsistências entre os eventos registados e o marcador.\n"
-                    + "Tem a certeza que pretende terminar o jogo?",
-                    "Inconsistência Detectada", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            int r = JOptionPane.showConfirmDialog(this, "Existem inconsistências. Terminar na mesma?", "Aviso", JOptionPane.YES_NO_OPTION);
             if (r != JOptionPane.YES_OPTION) return;
         }
 
-        String resumo = "Resultado final: "
-                + jogo.getEquipaCasa().getNome() + " " + jogo.getGolosCasa()
-                + " — " + jogo.getGolosFora() + " " + jogo.getEquipaFora().getNome()
-                + "\nEventos registados: " + jogo.getEventos().size()
-                + "\n\nConfirma o fim do jogo?";
-
-        int resposta = JOptionPane.showConfirmDialog(this, resumo,
-                "Confirmar Fim de Jogo", JOptionPane.YES_NO_OPTION);
+        int resposta = JOptionPane.showConfirmDialog(this, "Confirma o fim do jogo?", "Terminar", JOptionPane.YES_NO_OPTION);
         if (resposta != JOptionPane.YES_OPTION) return;
 
         try {
-            List<Equipa> apuradas = jogoControlador.terminarJogo(jogo);
+            jogoControlador.terminarJogo(jogo);
             atualizar();
             if (aoAtualizar != null) aoAtualizar.run();
-
-            // CA 8.1 — Empate técnico / apuramento
-            if (!apuradas.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                        "Todos os jogos do " + jogo.getGrupo().getNome() + " terminaram!\n"
-                        + "Equipas apuradas:\n"
-                        + "  1.º: " + apuradas.get(0).getNome() + "\n"
-                        + "  2.º: " + apuradas.get(1).getNome(),
-                        "Fase de Grupos Concluída", JOptionPane.INFORMATION_MESSAGE);
-            }
         } catch (IllegalStateException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Não foi possível terminar o jogo: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  UC12 — Editar Evento
-    // ══════════════════════════════════════════════════════════════════════════
 
     private void editarEventoDaLinha(int linha) {
         if (linha < 0 || eventosListados == null || linha >= eventosListados.size()) return;
         EventoJogo evento = eventosListados.get(linha);
 
-        if (!eventoControlador.podeCorrigir(evento)) {
-            JOptionPane.showMessageDialog(this,
-                    "O prazo de " + EventoControlador.PRAZO_CORRECAO_HORAS
-                    + " horas para corrigir este evento já expirou.",
-                    "Prazo Expirado", JOptionPane.WARNING_MESSAGE);
+        if (jogo.getEstado() == Jogo.Estado.TERMINADO && !eventoControlador.podeCorrigir(evento)) {
+            JOptionPane.showMessageDialog(this, "O prazo de edição expirou.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -293,8 +366,26 @@ public class PainelEstatisticasJogo extends JDialog {
         form.setVisible(true);
     }
 
+    private void removerEventoDaLinha(int linha) {
+        if (linha < 0 || eventosListados == null || linha >= eventosListados.size()) return;
+        EventoJogo evento = eventosListados.get(linha);
+
+        if (jogo.getEstado() == Jogo.Estado.TERMINADO && !eventoControlador.podeCorrigir(evento)) {
+            JOptionPane.showMessageDialog(this, "O prazo para remover expirou.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int r = JOptionPane.showConfirmDialog(this, "Tem a certeza que deseja remover este evento (" + evento.getTipo() + ")?", "Remover Evento", JOptionPane.YES_NO_OPTION);
+        if (r == JOptionPane.YES_OPTION) {
+            // Chamamos o método que criaste no passo anterior!
+            eventoControlador.removerEvento(jogo, evento);
+            atualizar();
+            if (aoAtualizar != null) aoAtualizar.run();
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
-    //  Utilitários de UI
+    //  Utilitários e Renderizadores
     // ══════════════════════════════════════════════════════════════════════════
 
     private JButton criarBotaoAcao(String texto, Color cor) {
@@ -302,14 +393,14 @@ public class PainelEstatisticasJogo extends JDialog {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(isEnabled() ? (getModel().isRollover() ? cor.darker() : cor) : COR_CINZENTO);
+                g2.setColor(isEnabled() ? cor : Color.GRAY);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
         btn.setFont(FONTE_NORMAL);
-        btn.setForeground(Color.WHITE);
+        btn.setForeground(cor == Color.WHITE ? Color.BLACK : Color.WHITE);
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorder(new EmptyBorder(8, 18, 8, 18));
@@ -317,46 +408,48 @@ public class PainelEstatisticasJogo extends JDialog {
         return btn;
     }
 
-    // ── Renderizador de botão na tabela (coluna Editar) ───────────────────────
-
-    private static class BotaoRenderer extends JButton implements javax.swing.table.TableCellRenderer {
-        BotaoRenderer() {
+    private static class BotaoRenderer extends JLabel implements javax.swing.table.TableCellRenderer {
+        private final Color corFundo;
+        BotaoRenderer(Color cor) {
+            this.corFundo = cor;
             setOpaque(true);
-            setFont(new Font("SansSerif", Font.PLAIN, 11));
-            setBorder(new EmptyBorder(3, 6, 3, 6));
+            setHorizontalAlignment(SwingConstants.CENTER); // Centrar o texto
+            setFont(new Font("SansSerif", Font.BOLD, 11));
         }
-        @Override public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             String txt = value == null ? "" : value.toString();
             setText(txt);
-            boolean activo = "Editar".equals(txt);
-            setBackground(activo ? new Color(0x1565C0) : new Color(0xEEEEEE));
+
+            boolean activo = !"—".equals(txt);
+            // Se estiver ativo, usa a cor (azul ou vermelho). Se não, fica cinza claro.
+            setBackground(activo ? corFundo : new Color(0xEEEEEE));
             setForeground(activo ? Color.WHITE : new Color(0x757575));
             return this;
         }
     }
 
-    // ── Editor de botão na tabela (coluna Editar) ─────────────────────────────
-
     private static class BotaoEditor extends DefaultCellEditor {
         private final java.util.function.IntConsumer acaoLinha;
+        private final String label;
         private int linhaAtual;
-        BotaoEditor(JCheckBox checkBox, java.util.function.IntConsumer acaoLinha) {
+        BotaoEditor(JCheckBox checkBox, java.util.function.IntConsumer acaoLinha, String label) {
             super(checkBox);
             this.acaoLinha = acaoLinha;
+            this.label = label;
             setClickCountToStart(1);
         }
-        @Override public Component getTableCellEditorComponent(JTable table, Object value,
-                boolean isSelected, int row, int column) {
+        @Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             this.linhaAtual = row;
             JButton btn = new JButton(value == null ? "" : value.toString());
-            btn.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            btn.setFont(new Font("SansSerif", Font.BOLD, 11));
             btn.addActionListener(e -> {
                 stopCellEditing();
                 acaoLinha.accept(linhaAtual);
             });
             return btn;
         }
-        @Override public Object getCellEditorValue() { return "Editar"; }
+        @Override public Object getCellEditorValue() { return label; }
     }
 }
