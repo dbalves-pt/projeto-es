@@ -13,9 +13,7 @@ public class EventoJogo {
 
     public enum Tipo {
         GOLO("Golo"),
-        REMATES("Remate"),
         ASSISTENCIA("Assistência"),
-        PASSES("Passe"),            // <-- ADICIONA ESTE
         CARTAO_AMARELO("Cartão Amarelo"),
         CARTAO_VERMELHO("Cartão Vermelho"),
         SUBSTITUICAO("Substituição"),

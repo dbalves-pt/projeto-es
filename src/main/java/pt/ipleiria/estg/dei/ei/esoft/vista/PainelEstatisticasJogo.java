@@ -173,28 +173,63 @@ public class PainelEstatisticasJogo extends JDialog {
         String eqB = jogo.getEquipaFora().getNome();
 
         modeloResumo = new DefaultTableModel(new String[]{eqA, "—", eqB}, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return false; }
+            @Override public boolean isCellEditable(int row, int col) {
+                // Bloqueia a coluna do meio (nomes das estatísticas)
+                if (col == 1) return false;
+
+                // Só permite editar Posse(0), Remates(2) e Passes(6), se o botão "Novo Evento" estiver ativo
+                return btnNovoEvento.isEnabled() && (row == 0 || row == 2 || row == 6);
+            }
+
+            @Override public void setValueAt(Object aValue, int row, int col) {
+                try {
+                    // Remove símbolos (como o "%") para apanhar só o número digitado
+                    int valor = Integer.parseInt(aValue.toString().replaceAll("[^0-9]", ""));
+
+                    if (row == 0) { // Lógica da Posse de Bola
+                        if (valor > 100) valor = 100;
+                        if (valor < 0) valor = 0;
+
+                        if (col == 0) {
+                            jogo.setPosseBolaEquipa1(valor);
+                            jogo.setPosseBolaEquipa2(100 - valor); // A outra equipa fica com o resto
+                        } else {
+                            jogo.setPosseBolaEquipa2(valor);
+                            jogo.setPosseBolaEquipa1(100 - valor); // A outra equipa fica com o resto
+                        }
+                    } else if (row == 2) { // Remates
+                        if (col == 0) jogo.setRematesEquipa1(valor);
+                        else jogo.setRematesEquipa2(valor);
+                    } else if (row == 6) { // Passes
+                        if (col == 0) jogo.setPassesEquipa1(valor);
+                        else jogo.setPassesEquipa2(valor);
+                    }
+
+                    // Força a tabela a atualizar-se visualmente após inserires o valor
+                    SwingUtilities.invokeLater(() -> atualizarResumoEstatisticas());
+
+                } catch (Exception ignored) { }
+            }
         };
 
         tabelaResumo = new JTable(modeloResumo);
         tabelaResumo.setRowHeight(35);
         tabelaResumo.setShowGrid(false);
-        // Forçar a cor do cabeçalho com um renderizador próprio
+        tabelaResumo.setFont(new Font("SansSerif", Font.BOLD, 14));
+
         tabelaResumo.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 JLabel lbl = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                lbl.setBackground(new Color(0x9E9E9E)); // Fundo cinzento
-                lbl.setForeground(Color.WHITE);         // Letra branca
+                lbl.setBackground(new Color(0x9E9E9E));
+                lbl.setForeground(Color.WHITE);
                 lbl.setFont(new Font("SansSerif", Font.BOLD, 14));
                 lbl.setHorizontalAlignment(SwingConstants.CENTER);
-                lbl.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, Color.WHITE)); // Linha separadora
+                lbl.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, Color.WHITE));
                 return lbl;
             }
         });
-        tabelaResumo.setFont(new Font("SansSerif", Font.BOLD, 14));
 
-        // Centralizar texto da tabela
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         for(int i=0; i<3; i++) tabelaResumo.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
@@ -293,8 +328,8 @@ public class PainelEstatisticasJogo extends JDialog {
     }
 
     private void atualizarResumoEstatisticas() {
-        int[] golos = {0,0}, remates = {0,0}, defesas = {0,0};
-        int[] passes = {0,0}, amarelo = {0,0}, vermelho = {0,0};
+        int[] golos = {0,0}, defesas = {0,0};
+        int[] amarelo = {0,0}, vermelho = {0,0};
 
         Equipa casa = jogo.getEquipaCasa();
 
@@ -302,22 +337,23 @@ public class PainelEstatisticasJogo extends JDialog {
             int i = (ev.getEquipa() == casa) ? 0 : 1;
             switch(ev.getTipo()) {
                 case GOLO -> golos[i]++;
-                case REMATES -> remates[i]++;
                 case DEFESA -> defesas[i]++;
-                case PASSES -> passes[i]++;
                 case CARTAO_AMARELO -> amarelo[i]++;
                 case CARTAO_VERMELHO -> vermelho[i]++;
                 default -> {}
             }
         }
 
-        modeloResumo.setRowCount(0);
+        modeloResumo.setRowCount(0); // Limpa as linhas
+
+        // Recria as 7 linhas misturando os dados do Controlador e os do Jogo
+        modeloResumo.addRow(new Object[]{jogo.getPosseBolaEquipa1() + "%", "Posse de Bola", jogo.getPosseBolaEquipa2() + "%"});
         modeloResumo.addRow(new Object[]{golos[0], "Golos", golos[1]});
-        modeloResumo.addRow(new Object[]{remates[0], "Remates", remates[1]});
+        modeloResumo.addRow(new Object[]{jogo.getRematesEquipa1(), "Remates", jogo.getRematesEquipa2()});
         modeloResumo.addRow(new Object[]{defesas[0], "Defesas (Baliza)", defesas[1]});
         modeloResumo.addRow(new Object[]{amarelo[0], "Cartões Amarelos", amarelo[1]});
         modeloResumo.addRow(new Object[]{vermelho[0], "Cartões Vermelhos", vermelho[1]});
-        modeloResumo.addRow(new Object[]{passes[0], "Passes", passes[1]});
+        modeloResumo.addRow(new Object[]{jogo.getPassesEquipa1(), "Passes", jogo.getPassesEquipa2()});
     }
 
     // ══════════════════════════════════════════════════════════════════════════

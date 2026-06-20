@@ -39,6 +39,8 @@ public class PainelCalendario extends JPanel {
     private DefaultTableModel modeloTabelaJogos;
     private List<Jogo> jogosListados;  // mantém correspondência linha -> Jogo
 
+    private JButton btnEliminatorias;  // NOVO BOTÃO
+
     public PainelCalendario(TorneioControlador torneioControlador,
                              JogoControlador jogoControlador,
                              EventoControlador eventoControlador) {
@@ -206,10 +208,43 @@ public class PainelCalendario extends JPanel {
         painel.add(scrollTabela);
         painel.add(Box.createVerticalStrut(10));
 
+        // ── NOVO: Painel de rodapé com a dica à esquerda e o Botão à direita ──
+        JPanel rodape = new JPanel(new BorderLayout());
+        rodape.setOpaque(false);
+        rodape.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         JLabel dica = new JLabel("Duplo clique num jogo para ver os detalhes.");
         dica.setFont(new Font("SansSerif", Font.ITALIC, 11));
-        dica.setAlignmentX(Component.LEFT_ALIGNMENT);
-        painel.add(dica);
+        rodape.add(dica, BorderLayout.WEST);
+
+        btnEliminatorias = new JButton("Gerar Fase Eliminatória");
+        btnEliminatorias.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btnEliminatorias.setBackground(new Color(0x3498DB)); // Azul ativo
+        btnEliminatorias.setForeground(Color.WHITE);
+        btnEliminatorias.setFocusPainted(false);
+        btnEliminatorias.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        btnEliminatorias.addActionListener(e -> {
+            try {
+                torneioControlador.gerarProximaFase();
+                atualizar(); // Recarrega o calendário para mostrar os novos jogos
+
+                // Força a aba Principal a atualizar o Dashboard (Bracket)
+                Window window = SwingUtilities.getWindowAncestor(this);
+                if (window instanceof JanelaPrincipal) {
+                    ((JanelaPrincipal) window).atualizarEstatisticas();
+                }
+
+                JOptionPane.showMessageDialog(this,
+                        "Fase Eliminatória gerada com sucesso!\nVerifique a nova grelha na Página Principal.",
+                        "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Aviso", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        rodape.add(btnEliminatorias, BorderLayout.EAST);
+        painel.add(rodape);
 
         return painel;
     }
@@ -255,6 +290,8 @@ public class PainelCalendario extends JPanel {
         jogosListados = jogoControlador.getJogos();
 
         int id = 1;
+        pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase faseMaisAvancada = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.GRUPOS;
+
         for (Jogo jogo : jogosListados) {
             String descricaoJogo = jogo.getEquipaCasa().getNome() + " x " + jogo.getEquipaFora().getNome();
             modeloTabelaJogos.addRow(new Object[]{
@@ -264,6 +301,35 @@ public class PainelCalendario extends JPanel {
                     jogo.getEstadio().getNome(),
                     formatarEstado(jogo)
             });
+
+            // Encontrar a fase mais avançada existente no calendário
+            if (jogo.getFase() == Jogo.Fase.FINAL) faseMaisAvancada = Jogo.Fase.FINAL;
+            else if (jogo.getFase() == Jogo.Fase.MEIAS && faseMaisAvancada != Jogo.Fase.FINAL)
+                faseMaisAvancada = Jogo.Fase.MEIAS;
+            else if (jogo.getFase() == Jogo.Fase.QUARTOS && faseMaisAvancada != Jogo.Fase.FINAL && faseMaisAvancada != Jogo.Fase.MEIAS)
+                faseMaisAvancada = Jogo.Fase.QUARTOS;
+        }
+
+        // Verificar se todos os jogos dessa "fase mais avançada" estão terminados
+        pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase fVerificar = faseMaisAvancada;
+        boolean todosDestaFaseTerminados = jogosListados.stream()
+                .filter(j -> j.getFase() == fVerificar)
+                .allMatch(j -> j.getEstado() == Jogo.Estado.TERMINADO);
+
+        // Controlar o estado e o texto do Botão dinamicamente
+        if (btnEliminatorias != null) {
+            boolean torneioAcabou = (faseMaisAvancada == Jogo.Fase.FINAL && todosDestaFaseTerminados);
+            boolean podeGerar = todosDestaFaseTerminados && jogosListados.size() > 0;
+
+            btnEliminatorias.setEnabled(podeGerar);
+
+            if (torneioAcabou) {
+                btnEliminatorias.setText("Ver Vencedor \uD83C\uDFC6");
+                btnEliminatorias.setBackground(new Color(0x4CAF50)); // Verde vitória
+            } else {
+                btnEliminatorias.setText("Gerar Próxima Fase");
+                btnEliminatorias.setBackground(podeGerar ? new Color(0x3498DB) : Color.GRAY); // Azul se ativo, Cinza se bloqueado
+            }
         }
     }
 

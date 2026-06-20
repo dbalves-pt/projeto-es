@@ -34,6 +34,12 @@ public class Jogo {
 
     private int golosEquipa1;
     private int golosEquipa2;
+    private int posseBolaEquipa1 = 50; // Começa sempre com 50/50
+    private int posseBolaEquipa2 = 50;
+    private int rematesEquipa1 = 0;
+    private int rematesEquipa2 = 0;
+    private int passesEquipa1 = 0;
+    private int passesEquipa2 = 0;
 
     private final List<EventoJogo> eventos;
 
@@ -203,4 +209,19 @@ public class Jogo {
     public Double getPrecoEspecial(Bancada bancada) {
         return precosEspeciais.get(bancada);
     }
+
+    public int getPosseBolaEquipa1() { return posseBolaEquipa1; }
+    public void setPosseBolaEquipa1(int v) { this.posseBolaEquipa1 = v; }
+    public int getPosseBolaEquipa2() { return posseBolaEquipa2; }
+    public void setPosseBolaEquipa2(int v) { this.posseBolaEquipa2 = v; }
+
+    public int getRematesEquipa1() { return rematesEquipa1; }
+    public void setRematesEquipa1(int v) { this.rematesEquipa1 = v; }
+    public int getRematesEquipa2() { return rematesEquipa2; }
+    public void setRematesEquipa2(int v) { this.rematesEquipa2 = v; }
+
+    public int getPassesEquipa1() { return passesEquipa1; }
+    public void setPassesEquipa1(int v) { this.passesEquipa1 = v; }
+    public int getPassesEquipa2() { return passesEquipa2; }
+    public void setPassesEquipa2(int v) { this.passesEquipa2 = v; }
 }

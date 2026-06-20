@@ -14,26 +14,31 @@ import java.util.List;
  * Controlador UC07 (Configurar Torneio) e UC08 (Validar e Iniciar Torneio).
  *
  * UC07 — Caminho Principal:
- *   1. Utilizador preenche datas, define regras (dias de descanso, número
- *      total de equipas) e clica em 'Gerar torneio'.
- *   2. Sistema valida datas, número de equipas, dias de descanso e se as
- *      equipas têm jogadores APTOS.
- *   3. Sistema distribui as equipas, gera os jogos e altera o estado para
- *      CONFIGURADO, bloqueando a edição de equipas e jogadores.
+ * 1. Utilizador preenche datas, define regras (dias de descanso, número
+ * total de equipas) e clica em 'Gerar torneio'.
+ * 2. Sistema valida datas, número de equipas, dias de descanso e se as
+ * equipas têm jogadores APTOS.
+ * 3. Sistema distribui as equipas, gera os jogos e altera o estado para
+ * CONFIGURADO, bloqueando a edição de equipas e jogadores.
  *
  * UC08 — Caminho Principal:
- *   1. Utilizador clica em 'Validar Calendário'.
- *   2. Sistema verifica conflitos de horários/estádios/dias de descanso.
- *   3. Sistema apresenta o relatório; se sem conflitos, activa 'Confirmar Validação'.
- *   4. Utilizador confirma -> estado passa a VALIDADO.
- *   5. Utilizador clica em 'Iniciar Torneio' -> diálogo de confirmação -> estado EM_CURSO.
+ * 1. Utilizador clica em 'Validar Calendário'.
+ * 2. Sistema verifica conflitos de horários/estádios/dias de descanso.
+ * 3. Sistema apresenta o relatório; se sem conflitos, activa 'Confirmar Validação'.
+ * 4. Utilizador confirma -> estado passa a VALIDADO.
+ * 5. Utilizador clica em 'Iniciar Torneio' -> diálogo de confirmação -> estado EM_CURSO.
  */
 public class TorneioControlador {
 
     private final Torneio torneio;
 
-    public TorneioControlador()            { this.torneio = Torneio.getInstancia(); }
-    public TorneioControlador(Torneio t)   { this.torneio = t; }
+    public TorneioControlador() {
+        this.torneio = Torneio.getInstancia();
+    }
+
+    public TorneioControlador(Torneio t) {
+        this.torneio = t;
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     //  UC07 — Configurar Torneio
@@ -41,33 +46,7 @@ public class TorneioControlador {
 
     /**
      * Valida e gera o torneio (grupos + calendário de jogos da fase de grupos).
-     *
-     * Códigos de erro lançados (IllegalArgumentException / IllegalStateException):
-     *   DATAS_INVALIDAS            – CA 4.1: datas em falta, mal formatadas ou fim antes do início.
-     *   EQUIPAS_INCOMPATIVEIS      – CA 4.2: número de equipas não é par nem divisível por 4.
-     *   EQUIPAS_SEM_JOGADORES      – CA 5.1: pelo menos uma equipa sem jogadores APTOS.
-     *   SEM_ESTADIOS               – CA 6.1: não existe nenhum estádio criado para alocar os jogos.
-     */
-    // ══════════════════════════════════════════════════════════════════════════
-    //  UC07 — Configurar Torneio
-    // ══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Valida e gera o torneio (grupos + calendário de jogos da fase de grupos).
-     *
-     * Códigos de erro lançados (IllegalArgumentException / IllegalStateException):
-     * DATAS_INVALIDAS            – CA 4.1: datas em falta, mal formatadas ou fim antes do início.
-     * EQUIPAS_INCOMPATIVEIS      – CA 4.2: número de equipas não é par nem divisível por 4.
-     * EQUIPAS_SEM_JOGADORES      – CA 5.1: pelo menos uma equipa sem jogadores APTOS.
-     * SEM_ESTADIOS               – CA 6.1: não existe nenhum estádio criado para alocar os jogos.
-     */
-    // ══════════════════════════════════════════════════════════════════════════
-    //  UC07 — Configurar Torneio
-    // ══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Valida e gera o torneio (grupos + calendário de jogos da fase de grupos).
-     *
+     * <p>
      * Códigos de erro lançados (IllegalArgumentException / IllegalStateException):
      * DATAS_INVALIDAS            – CA 4.1: datas em falta, mal formatadas ou fim antes do início.
      * EQUIPAS_INCOMPATIVEIS      – CA 4.2: número de equipas não é par nem divisível por 4.
@@ -126,9 +105,9 @@ public class TorneioControlador {
         torneio.setEstado(Torneio.Estado.CONFIGURADO);
     }
 
-
-
-    /** Lista as equipas que não têm nenhum jogador no estado APTO. */
+    /**
+     * Lista as equipas que não têm nenhum jogador no estado APTO.
+     */
     public List<String> equipasSemJogadoresAptos() {
         List<String> resultado = new ArrayList<>();
         for (Equipa eq : torneio.getEquipas()) {
@@ -139,7 +118,9 @@ public class TorneioControlador {
         return resultado;
     }
 
-    public boolean isConfiguracaoBloqueada() { return torneio.gruposGerados(); }
+    public boolean isConfiguracaoBloqueada() {
+        return torneio.gruposGerados();
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     //  UC08 — Validar e Iniciar Torneio
@@ -170,71 +151,124 @@ public class TorneioControlador {
         torneio.iniciarTorneio();
     }
 
-    public boolean podeValidar()       { return torneio.getEstado() == Torneio.Estado.CONFIGURADO; }
-    public boolean podeIniciar()       { return torneio.getEstado() == Torneio.Estado.VALIDADO; }
-    public boolean torneioEmCurso()    { return torneio.getEstado() == Torneio.Estado.EM_CURSO; }
+    public boolean podeValidar() {
+        return torneio.getEstado() == Torneio.Estado.CONFIGURADO;
+    }
+
+    public boolean podeIniciar() {
+        return torneio.getEstado() == Torneio.Estado.VALIDADO;
+    }
+
+    public boolean torneioEmCurso() {
+        return torneio.getEstado() == Torneio.Estado.EM_CURSO;
+    }
 
     // ── Auxiliares para a Vista ───────────────────────────────────────────────
-    public List<Grupo> getGrupos()   { return torneio.getGrupos(); }
-    public List<Jogo>  getJogos()    { return torneio.getJogos(); }
-    public Torneio.Estado getEstadoTorneio() { return torneio.getEstado(); }
+    public List<Grupo> getGrupos() {
+        return torneio.getGrupos();
+    }
+
+    public List<Jogo> getJogos() {
+        return torneio.getJogos();
+    }
+
+    public Torneio.Estado getEstadoTorneio() {
+        return torneio.getEstado();
+    }
 
     /**
-     * Gera os jogos da Fase Eliminatória (Quartos de Final) cruzando os
-     * 1ºs e 2ºs classificados dos 4 grupos.
+     * Motor progressivo do torneio. Gera a próxima fase mediante a fase atual.
+     * Grupos -> Quartos -> Meias -> Final.
      */
-    public void gerarQuartosDeFinal() {
+    public void gerarProximaFase() {
         pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio torneio = pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio.getInstancia();
-
-        // 1. Verificar se a fase de grupos já acabou (todos os jogos de GRUPOS estão TERMINADOS)
-        boolean todosGruposTerminados = torneio.getJogos().stream()
-                .filter(j -> j.getFase() == Jogo.Fase.GRUPOS)
-                .allMatch(j -> j.getEstado() == Jogo.Estado.TERMINADO);
-
-        if (!todosGruposTerminados) {
-            throw new IllegalStateException("Ainda existem jogos da Fase de Grupos por terminar!");
-        }
-
-        // 2. Verificar se já não gerámos os quartos de final antes (para não duplicar)
-        boolean jaTemQuartos = torneio.getJogos().stream()
-                .anyMatch(j -> j.getFase() == Jogo.Fase.QUARTOS);
-
-        if (jaTemQuartos) {
-            throw new IllegalStateException("A fase eliminatória já foi gerada!");
-        }
-
-        List<pt.ipleiria.estg.dei.ei.esoft.modelo.Grupo> grupos = torneio.getGrupos();
-        if (grupos.size() < 4) {
-            throw new IllegalStateException("É necessário ter pelo menos 4 grupos para gerar Quartos de Final.");
-        }
-
-        /* 3. Obter as equipas apuradas (Cruzamento clássico de torneios) */
         List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> todosJogos = torneio.getJogos();
 
-        Equipa q1Casa = grupos.get(0).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo A
-        Equipa q1Fora = grupos.get(1).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo B
+        // 1. Descobrir a fase mais avançada atual no calendário
+        pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase faseAtual = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.GRUPOS;
+        for (pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo j : todosJogos) {
+            if (j.getFase() == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL) faseAtual = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL;
+            else if (j.getFase() == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.MEIAS && faseAtual != pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL) faseAtual = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.MEIAS;
+            else if (j.getFase() == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.QUARTOS && faseAtual != pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL && faseAtual != pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.MEIAS) faseAtual = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.QUARTOS;
+            else if (j.getFase() == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.OITAVOS && faseAtual == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.GRUPOS) faseAtual = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.OITAVOS;
+        }
 
-        Equipa q2Casa = grupos.get(2).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo C
-        Equipa q2Fora = grupos.get(3).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo D
+        // 2. Obter os jogos dessa fase específica e verificar se estão todos terminados
+        pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase fAtual = faseAtual;
+        List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> jogosFaseAtual = todosJogos.stream()
+                .filter(j -> j.getFase() == fAtual)
+                .toList();
 
-        Equipa q3Casa = grupos.get(1).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo B
-        Equipa q3Fora = grupos.get(0).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo A
+        if (!jogosFaseAtual.stream().allMatch(j -> j.getEstado() == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Estado.TERMINADO)) {
+            throw new IllegalStateException("Ainda existem jogos da fase atual (" + fAtual + ") por terminar!");
+        }
 
-        Equipa q4Casa = grupos.get(3).calcularClassificacao(todosJogos).get(0).getEquipa(); // 1º Grupo D
-        Equipa q4Fora = grupos.get(2).calcularClassificacao(todosJogos).get(1).getEquipa(); // 2º Grupo C
-
-        // 4. Agendar os jogos (vamos buscar o primeiro estádio da lista e a data do último jogo)
         pt.ipleiria.estg.dei.ei.esoft.modelo.Estadio estadio = torneio.getEstadios().get(0);
-        java.time.LocalDateTime ultimaData = torneio.getJogos().stream()
-                .map(Jogo::getDataHora)
+        java.time.LocalDateTime ultimaData = todosJogos.stream()
+                .map(pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo::getDataHora)
                 .max(java.time.LocalDateTime::compareTo)
                 .orElse(java.time.LocalDateTime.now());
 
-        // 5. Adicionar os 4 jogos ao torneio (sem pertencerem a nenhum grupo, daí o 'null')
-        torneio.adicionarJogo(new Jogo(q1Casa, q1Fora, estadio, ultimaData.plusDays(2), null, Jogo.Fase.QUARTOS));
-        torneio.adicionarJogo(new Jogo(q2Casa, q2Fora, estadio, ultimaData.plusDays(3), null, Jogo.Fase.QUARTOS));
-        torneio.adicionarJogo(new Jogo(q3Casa, q3Fora, estadio, ultimaData.plusDays(4), null, Jogo.Fase.QUARTOS));
-        torneio.adicionarJogo(new Jogo(q4Casa, q4Fora, estadio, ultimaData.plusDays(5), null, Jogo.Fase.QUARTOS));
-    }
-}
+        int diaExtra = 2;
 
+        // ── 3. LÓGICA A: Gerar a 1ª fase eliminatória a partir dos Grupos ──
+        if (faseAtual == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.GRUPOS) {
+            List<pt.ipleiria.estg.dei.ei.esoft.modelo.Grupo> grupos = torneio.getGrupos();
+            int numGrupos = grupos.size();
+
+            if (numGrupos == 1) { // 4 Equipas -> FINAL DIRETA (Top 2)
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa e1 = grupos.get(0).calcularClassificacao(todosJogos).get(0).getEquipa();
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa e2 = grupos.get(0).calcularClassificacao(todosJogos).get(1).getEquipa();
+                torneio.adicionarJogo(new pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo(e1, e2, estadio, ultimaData.plusDays(diaExtra), null, pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL));
+            }
+            else if (numGrupos == 2) { // 8 Equipas -> MEIAS FINAIS
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa g1_1 = grupos.get(0).calcularClassificacao(todosJogos).get(0).getEquipa();
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa g1_2 = grupos.get(0).calcularClassificacao(todosJogos).get(1).getEquipa();
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa g2_1 = grupos.get(1).calcularClassificacao(todosJogos).get(0).getEquipa();
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa g2_2 = grupos.get(1).calcularClassificacao(todosJogos).get(1).getEquipa();
+
+                torneio.adicionarJogo(new pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo(g1_1, g2_2, estadio, ultimaData.plusDays(diaExtra++), null, pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.MEIAS));
+                torneio.adicionarJogo(new pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo(g2_1, g1_2, estadio, ultimaData.plusDays(diaExtra), null, pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.MEIAS));
+            }
+            else if (numGrupos == 4) { // 16 Equipas -> QUARTOS DE FINAL
+                for (int i = 0; i < numGrupos; i += 2) {
+                    pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa p1 = grupos.get(i).calcularClassificacao(todosJogos).get(0).getEquipa();
+                    pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa s1 = grupos.get(i).calcularClassificacao(todosJogos).get(1).getEquipa();
+                    pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa p2 = grupos.get(i+1).calcularClassificacao(todosJogos).get(0).getEquipa();
+                    pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa s2 = grupos.get(i+1).calcularClassificacao(todosJogos).get(1).getEquipa();
+
+                    torneio.adicionarJogo(new pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo(p1, s2, estadio, ultimaData.plusDays(diaExtra++), null, pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.QUARTOS));
+                    torneio.adicionarJogo(new pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo(p2, s1, estadio, ultimaData.plusDays(diaExtra++), null, pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.QUARTOS));
+                }
+            }
+        }
+        // ── 4. LÓGICA B: Declarar Campeão se a Final já acabou ──
+        else if (faseAtual == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL) {
+            pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa vencedor = obterVencedor(jogosFaseAtual.get(0));
+            throw new IllegalStateException("O Torneio já terminou! A equipa campeã é: " + vencedor.getNome() + " \uD83C\uDFC6");
+        }
+        // ── 5. LÓGICA C: Avançar vencedores para a fase seguinte ──
+        else {
+            pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase proximaFase;
+            if (faseAtual == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.QUARTOS) proximaFase = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.MEIAS;
+            else proximaFase = pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Fase.FINAL;
+
+            // Pega nos jogos 2 a 2, descobre os vencedores e agenda o novo jogo
+            for (int i = 0; i < jogosFaseAtual.size(); i += 2) {
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa v1 = obterVencedor(jogosFaseAtual.get(i));
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa v2 = obterVencedor(jogosFaseAtual.get(i+1));
+                torneio.adicionarJogo(new pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo(v1, v2, estadio, ultimaData.plusDays(diaExtra++), null, proximaFase));
+            }
+        }
+    }
+
+    /**
+     * Helper para garantir que nas eliminatórias as equipas não empatam.
+     */
+    private pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa obterVencedor(pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo j) {
+        if (j.getGolosCasa() > j.getGolosFora()) return j.getEquipaCasa();
+        if (j.getGolosFora() > j.getGolosCasa()) return j.getEquipaFora();
+        throw new IllegalStateException("O jogo " + j.getEquipaCasa().getNome() + " x " + j.getEquipaFora().getNome() + " terminou empatado! Adicione um golo (ex: penálti) nas estatísticas para declarar o vencedor.");
+    }
+
+}
