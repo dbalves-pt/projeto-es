@@ -48,6 +48,7 @@ public class EquipaControlador {
     // ══════════════════════════════════════════════════════════════════════════
 
     public void adicionarEquipa(String nome, String pais) {
+        if (torneio.gruposGerados()) throw new IllegalStateException("GRUPOS_GERADOS");
         validarCamposComuns(nome, pais, null);
         torneio.adicionarEquipa(new Equipa(nome.trim(), pais.trim()));
     }

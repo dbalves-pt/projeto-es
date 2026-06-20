@@ -153,6 +153,9 @@ public class FormularioJogador extends JDialog {
 
         // ── Data de Nascimento ────────────────────────────────────────────────
         campData = criarTextField("Data de Nascimento...");
+        // CHAMA O MÉTODO DIRETAMENTE DA OUTRA CLASSE:
+        JanelaPrincipal.aplicarMascaraData(campData);
+
         p.add(campData);
         lblErroData = labelErro();
         p.add(lblErroData);
@@ -192,6 +195,17 @@ public class FormularioJogador extends JDialog {
         campNumero.setText(String.valueOf(jogadorParaEditar.getNumeroCamisola()));
         campNumero.setForeground(COR_TEXTO);
         selecionarCombo(comboEstado, jogadorParaEditar.getEstado().toString());
+
+        // ── NOVO: SE O TORNEIO JÁ COMEÇOU, TRANCA OS CAMPOS VISUALMENTE ──
+        if (pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio.getInstancia().getEstado() == pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio.Estado.EM_CURSO) {
+            campNome.setEnabled(false);
+            comboPosicao.setEnabled(false);
+            campData.setEnabled(false);
+            campNumero.setEnabled(false);
+
+            // Opcional: Adiciona uma dica no título para o utilizador saber o que se passa
+            setTitle("Modo Médico — Apenas Alteração de Estado");
+        }
     }
 
     private void selecionarCombo(JComboBox<String> cb, String valor) {

@@ -47,12 +47,27 @@ public class JogadorControlador {
      *
      * @throws IllegalArgumentException com código de erro em caso de validação falhada.
      */
+
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC03 — Adicionar Jogador
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  UC03 — Adicionar Jogador
+    // ══════════════════════════════════════════════════════════════════════════
+
     public void adicionarJogador(Equipa equipa,
                                  String nomeCompleto,
                                  String descricaoPosicao,
                                  String dataTexto,
                                  String numeroCamisolaStr,
                                  String descricaoEstado) {
+
+        // ── VERIFICAÇÃO NOVA E ÚNICA: Bloqueia se a bola já rolou no 1º jogo ──
+        if (isMercadoFechado()) {
+            throw new IllegalStateException("TORNEIO_EM_CURSO_INSERCAO_BLOQUEADA");
+        }
 
         // CA 5.1 — Campos obrigatórios vazios
         if (nomeCompleto == null || nomeCompleto.isBlank())
@@ -77,6 +92,11 @@ public class JogadorControlador {
         // Número de camisola único dentro da equipa
         if (equipa.existeNumeroCamisola(numero))
             throw new IllegalArgumentException("NUMERO_CAMISOLA_DUPLICADO");
+
+        // VALIDAÇÃO DO LIMITE DE 23 JOGADORES APTOS
+        if (estado == Estado.APTO) {
+            validarLimiteAptos(equipa);
+        }
 
         Jogador novoJogador = new Jogador(nomeCompleto, equipa, posicao, data, numero, estado);
         equipa.adicionarJogador(novoJogador);
@@ -104,20 +124,27 @@ public class JogadorControlador {
         if (descricaoEstado == null || descricaoEstado.isBlank())
             throw new IllegalArgumentException("CAMPO_ESTADO_VAZIO");
 
+        // 1º FAZ O PARSING DAS VARIÁVEIS PRIMEIRO!
         Posicao   posicao = parsarPosicao(descricaoPosicao);
         LocalDate data    = parsarData(dataTexto);
         int       numero  = parsarNumeroCamisola(numeroCamisolaStr);
         Estado    estado  = parsarEstado(descricaoEstado);
 
-        // ── VALIDAÇÃO: LIMITE DE 23 JOGADORES APTOS NA EDIÇÃO ──
-        if (estado == Estado.APTO && jogador.getEstado() != Estado.APTO) {
-            long numeroAptos = jogador.getEquipa().getJogadores().stream()
-                    .filter(j -> j.getEstado() == Estado.APTO)
-                    .count();
-            if (numeroAptos >= 23) {
-                throw new IllegalArgumentException("LIMITE_JOGADORES_APTO_EXCEDIDO");
+        // 2º ── VERIFICAÇÃO NOVA E ÚNICA: SE A BOLA JÁ ROLOU, SÓ MUDA ESTADO MÉDICO ──
+        if (isMercadoFechado()) {
+            if (!jogador.getNomeCompleto().trim().equalsIgnoreCase(nomeCompleto.trim()) ||
+                    jogador.getPosicao() != posicao ||
+                    !jogador.getDataNascimento().equals(data) ||
+                    jogador.getNumeroCamisola() != numero) {
+                throw new IllegalStateException("APENAS_ALTERACAO_DE_ESTADO_PERMITIDA");
             }
         }
+
+        // USA O MÉTODO AUXILIAR PARA LIMPAR O CÓDIGO
+        if (estado == Estado.APTO && jogador.getEstado() != Estado.APTO) {
+            validarLimiteAptos(jogador.getEquipa());
+        }
+
         // Verificar duplicado excluindo o próprio jogador
         if (jogador.getEquipa().existeNumeroCamisolaExcluindo(numero, jogador))
             throw new IllegalArgumentException("NUMERO_CAMISOLA_DUPLICADO");
@@ -128,7 +155,6 @@ public class JogadorControlador {
         jogador.setNumeroCamisola(numero);
         jogador.setEstado(estado);
     }
-
     // ══════════════════════════════════════════════════════════════════════════
     //  Auxiliares para a Vista
     // ══════════════════════════════════════════════════════════════════════════
@@ -182,6 +208,29 @@ public class JogadorControlador {
         }
     }
 
+
+    // ── Método auxiliar para verificar limite de jogadores APTOS ──
+    private void validarLimiteAptos(Equipa equipa) {
+        long numeroAptos = equipa.getJogadores().stream()
+                .filter(j -> j.getEstado() == Estado.APTO)
+                .count();
+        if (numeroAptos >= 23) {
+            throw new IllegalArgumentException("LIMITE_JOGADORES_APTO_EXCEDIDO");
+        }
+    }
+
+    // ── MÉTODO INTELIGENTE: Verifica se o primeiro jogo já começou ──
+    public boolean isMercadoFechado() {
+        if (pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio.getInstancia().getEstado() != pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio.Estado.EM_CURSO) {
+            return false; // Se o calendário nem foi gerado, o mercado está abertíssimo
+        }
+
+        // Se já foi gerado, vai ver se algum jogo já saiu do estado "Calendarizado"
+        pt.ipleiria.estg.dei.ei.esoft.controlador.JogoControlador jc = new pt.ipleiria.estg.dei.ei.esoft.controlador.JogoControlador();
+        return jc.getJogos().stream().anyMatch(j ->
+                j.getEstado() != pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Estado.CALENDARIZADO
+        );
+    }
 
     private int parsarNumeroCamisola(String texto) {
         try {
