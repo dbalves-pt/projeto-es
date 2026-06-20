@@ -30,6 +30,7 @@ public class FormularioEvento extends JDialog {
     private JComboBox<String> comboTipo;
     private JComboBox<String> comboEquipa;
     private JComboBox<String> comboJogador;
+    private JComboBox<String> comboAssistencia;
     private JTextField        campMinuto;
 
     private JLabel lblErroTipo;
@@ -104,7 +105,10 @@ public class FormularioEvento extends JDialog {
         // ── Tipo de Evento ────────────────────────────────────────────────────
         List<String> tipos = eventoControlador.getDescricoesTipo();
         comboTipo = criarCombo(prepararOpcoes("Tipo de Evento", tipos));
-        comboTipo.addActionListener(e -> { /* sem reacção em cascata */ });
+        comboTipo.addActionListener(e -> {
+            boolean isGolo = "Golo".equals(comboTipo.getSelectedItem());
+            comboAssistencia.setVisible(isGolo);
+        });
         p.add(comboTipo);
         lblErroTipo = labelErro();
         p.add(lblErroTipo);
@@ -133,6 +137,12 @@ public class FormularioEvento extends JDialog {
         p.add(lblErroJogador);
         p.add(rigidH(8));
 
+        // ── Assistência (Invisível por defeito) ───────────────────────────────
+        comboAssistencia = criarCombo(new String[]{"Assistência (Opcional)"});
+        comboAssistencia.setVisible(false);
+        p.add(comboAssistencia);
+        p.add(rigidH(8));
+
         // ── Minuto ────────────────────────────────────────────────────────────
         campMinuto = criarTextField("Minuto (0–130)...");
         p.add(campMinuto);
@@ -151,8 +161,12 @@ public class FormularioEvento extends JDialog {
     private void atualizarJogadores() {
         int idxEquipa = comboEquipa.getSelectedIndex();
         jogadoresDisponiveis.clear();
+
         comboJogador.removeAllItems();
         comboJogador.addItem("Jogador");
+
+        comboAssistencia.removeAllItems();
+        comboAssistencia.addItem("Assistência (Opcional)");
 
         if (idxEquipa > 0) {
             Equipa eq = equipasDisponiveis.get(idxEquipa - 1);
@@ -160,6 +174,7 @@ public class FormularioEvento extends JDialog {
                 if (j.getEstado() == Jogador.Estado.APTO) {
                     jogadoresDisponiveis.add(j);
                     comboJogador.addItem(j.getNomeCompleto());
+                    comboAssistencia.addItem(j.getNomeCompleto());
                 }
             }
         }
@@ -181,6 +196,14 @@ public class FormularioEvento extends JDialog {
         // Minuto
         campMinuto.setText(String.valueOf(eventoParaEditar.getMinuto()));
         campMinuto.setForeground(COR_TEXTO);
+
+        // Assistência (NOVO)
+        if (eventoParaEditar.getTipo() == EventoJogo.Tipo.GOLO) {
+            comboAssistencia.setVisible(true);
+            if (eventoParaEditar.getAssistencia() != null) {
+                selecionarCombo(comboAssistencia, eventoParaEditar.getAssistencia().getNomeCompleto());
+            }
+        }
     }
 
     // ── Botão Concluído ───────────────────────────────────────────────────────
@@ -219,13 +242,17 @@ public class FormularioEvento extends JDialog {
         Jogador jogador = idxJog > 0 ? jogadoresDisponiveis.get(idxJog - 1) : null;
         String minuto  = textoReal(campMinuto, "Minuto (0–130)...");
 
+        // NOVO: Recolher a assistência se a combobox estiver visível (ou seja, se for Golo)
+        int idxAssist = comboAssistencia.getSelectedIndex();
+        Jogador assistencia = (comboAssistencia.isVisible() && idxAssist > 0) ? jogadoresDisponiveis.get(idxAssist - 1) : null;
+
         try {
             if (eventoParaEditar == null) {
-                // UC10 — Registar
-                eventoControlador.registarEvento(jogo, tipo, equipa, jogador, minuto);
+                // UC10 — Registar (Adicionamos a 'assistencia' no final)
+                eventoControlador.registarEvento(jogo, tipo, equipa, jogador, minuto, assistencia);
             } else {
-                // UC12 — Corrigir
-                eventoControlador.corrigirEvento(jogo, eventoParaEditar, tipo, equipa, jogador, minuto);
+                // UC12 — Corrigir (Adicionamos a 'assistencia' no final)
+                eventoControlador.corrigirEvento(jogo, eventoParaEditar, tipo, equipa, jogador, minuto, assistencia);
             }
             if (aoAtualizar != null) aoAtualizar.run();
             dispose();

@@ -13,7 +13,9 @@ public class EventoJogo {
 
     public enum Tipo {
         GOLO("Golo"),
+        REMATES("Remate"),
         ASSISTENCIA("Assistência"),
+        PASSES("Passe"),            // <-- ADICIONA ESTE
         CARTAO_AMARELO("Cartão Amarelo"),
         CARTAO_VERMELHO("Cartão Vermelho"),
         SUBSTITUICAO("Substituição"),
@@ -37,6 +39,7 @@ public class EventoJogo {
     private Equipa equipa;
     private Jogador jogador;
     private int minuto;
+    private Jogador assistencia;
 
     // Auditoria (UC12 — Corrigir Evento)
     private LocalDateTime registadoEm;
@@ -44,11 +47,16 @@ public class EventoJogo {
     private LocalDateTime corrigidoEm;
 
     public EventoJogo(Tipo tipo, Equipa equipa, Jogador jogador, int minuto) {
-        validar(tipo, equipa, jogador, minuto);
+        this(tipo, equipa, jogador, minuto, null);
+    }
+
+    public EventoJogo(Tipo tipo, Equipa equipa, Jogador jogador, int minuto, Jogador assistencia) {
+        validar(tipo, equipa, jogador, minuto, assistencia);
         this.tipo = tipo;
         this.equipa = equipa;
         this.jogador = jogador;
         this.minuto = minuto;
+        this.assistencia = assistencia;
         this.registadoEm = LocalDateTime.now();
         this.corrigido = false;
     }
@@ -61,6 +69,7 @@ public class EventoJogo {
     public LocalDateTime   getRegistadoEm() { return registadoEm; }
     public boolean         isCorrigido()    { return corrigido; }
     public LocalDateTime   getCorrigidoEm() { return corrigidoEm; }
+    public Jogador getAssistencia() { return assistencia; }
 
     // ── Correção (UC12) ───────────────────────────────────────────────────────
 
@@ -69,26 +78,45 @@ public class EventoJogo {
      * e registando o instante da alteração para efeitos de auditoria.
      */
     public void aplicarCorrecao(Tipo novoTipo, Equipa novaEquipa, Jogador novoJogador, int novoMinuto) {
-        validar(novoTipo, novaEquipa, novoJogador, novoMinuto);
+        aplicarCorrecao(novoTipo, novaEquipa, novoJogador, novoMinuto, null);
+    }
+
+    // <-- ADICIONA ESTA VERSÃO COMPLETA PARA A CORREÇÃO
+    public void aplicarCorrecao(Tipo novoTipo, Equipa novaEquipa, Jogador novoJogador, int novoMinuto, Jogador novaAssistencia) {
+        validar(novoTipo, novaEquipa, novoJogador, novoMinuto, novaAssistencia);
         this.tipo = novoTipo;
         this.equipa = novaEquipa;
         this.jogador = novoJogador;
         this.minuto = novoMinuto;
+        this.assistencia = novaAssistencia;
         this.corrigido = true;
         this.corrigidoEm = LocalDateTime.now();
     }
 
     private void validar(Tipo tipo, Equipa equipa, Jogador jogador, int minuto) {
+        validar(tipo, equipa, jogador, minuto, null);
+    }
+
+    private void validar(Tipo tipo, Equipa equipa, Jogador jogador, int minuto, Jogador assistencia) {
         if (tipo == null) throw new IllegalArgumentException("O tipo de evento é obrigatório.");
         if (equipa == null) throw new IllegalArgumentException("A equipa é obrigatória.");
         if (jogador == null) throw new IllegalArgumentException("O jogador é obrigatório.");
         if (minuto < 0 || minuto > 130)
             throw new IllegalArgumentException("Minuto inválido.");
+
+        // Validação da assistência: impede auto-assistência
+        if (tipo == Tipo.GOLO && assistencia != null && assistencia.equals(jogador)) {
+            throw new IllegalArgumentException("O jogador não pode fazer uma assistência para si próprio.");
+        }
     }
 
     @Override
     public String toString() {
-        return minuto + "' — " + tipo + " — " + jogador.getNomeCompleto() + " (" + equipa.getNome() + ")";
+        String texto = minuto + "' — " + tipo + " — " + jogador.getNomeCompleto() + " (" + equipa.getNome() + ")";
+        if (tipo == Tipo.GOLO && assistencia != null) {
+            texto += " [Assistência de: " + assistencia.getNomeCompleto() + "]";
+        }
+        return texto;
     }
 
     /**
