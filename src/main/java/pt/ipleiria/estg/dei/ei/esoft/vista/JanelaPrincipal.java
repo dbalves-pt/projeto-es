@@ -42,11 +42,12 @@ public class JanelaPrincipal extends JFrame {
     private JList<Equipa>            listaEquipas;
     private JTextField               campDataInicio;
     private JTextField               campDataFim;
-    private JTextField               campDiasDescanso;
     private JLabel                   lblErroDataInicio;
     private JLabel                   lblErroDataFim;
-    private JLabel                   lblErroDias;
 
+    // ── Novas variáveis para guardar as regras ──
+    private int diasDescansoConfigurados = -1;
+    private int numeroTotalEquipasConfigurado = -1;
     // ── Referência ao painel do calendário (para refrescar após acções) ────────
     private PainelCalendario painelCalendario;
 
@@ -106,12 +107,13 @@ public class JanelaPrincipal extends JFrame {
         painel.setPreferredSize(new Dimension(400, 580));
         painel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Título
-        JPanel painelTitulo = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        // Título (Agora Centrado)
+        JPanel painelTitulo = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         painelTitulo.setOpaque(false);
+        painelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT); // ALINHAMENTO CORRIGIDO
         painelTitulo.setMaximumSize(new Dimension(380, 30));
         JLabel lblTitulo = new JLabel("Criar Torneio");
-        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 18));
+        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 22));
         painelTitulo.add(lblTitulo);
         painel.add(painelTitulo);
         painel.add(Box.createVerticalStrut(15));
@@ -128,24 +130,25 @@ public class JanelaPrincipal extends JFrame {
         campDataFim    = criarCampoData("Data de Fim (dd/MM/yyyy)...", lblErroDataFim);
         painel.add(campDataFim);
         painel.add(lblErroDataFim);
-        painel.add(Box.createVerticalStrut(4));
-
-        // Dias de Descanso
-        lblErroDias       = criarLabelErro();
-        campDiasDescanso  = criarCampoData("Dias de descanso entre jogos (ex: 2)...", lblErroDias);
-        painel.add(campDiasDescanso);
-        painel.add(lblErroDias);
         painel.add(Box.createVerticalStrut(10));
 
-        // Lista de Equipas
+        // Botão para abrir as Regras
+        JButton btnRegras = criarBotaoFigma("Definir Regras...");
+        btnRegras.setMaximumSize(new Dimension(380, 38));
+        btnRegras.addActionListener(e -> abrirDialogoRegras());
+        painel.add(btnRegras);
+        painel.add(Box.createVerticalStrut(15));
+
+        // Lista de Equipas (Agora Centrada)
         JPanel painelLista = new JPanel(new BorderLayout());
+        painelLista.setAlignmentX(Component.CENTER_ALIGNMENT); // ALINHAMENTO CORRIGIDO
         painelLista.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1, true));
         painelLista.setMaximumSize(new Dimension(380, 200));
 
         JLabel lblHeaderEquipas = new JLabel("  Equipas");
         lblHeaderEquipas.setOpaque(true);
         lblHeaderEquipas.setBackground(COR_CINZENTO_HEADER);
-        lblHeaderEquipas.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblHeaderEquipas.setFont(new Font("SansSerif", Font.BOLD, 12));
         lblHeaderEquipas.setPreferredSize(new Dimension(380, 25));
         painelLista.add(lblHeaderEquipas, BorderLayout.NORTH);
 
@@ -182,29 +185,109 @@ public class JanelaPrincipal extends JFrame {
         btnGerar.addActionListener(e -> validarEGerarTorneio());
         painel.add(btnGerar);
 
+        painel.add(Box.createVerticalGlue()); // Mantém os elementos empurrados para cima
+
         return painel;
     }
-
     // ══════════════════════════════════════════════════════════════════════════
     //  Lógica UC07 — Gerar Torneio
     // ══════════════════════════════════════════════════════════════════════════
 
+    // ── NOVO: Formulário de Regras ──
+    private void abrirDialogoRegras() {
+        JDialog dialog = new JDialog(this, "Regras do Torneio", true);
+        dialog.setSize(350, 400);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setBackground(COR_FUNDO_AZUL);
+        p.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel titulo = new JLabel("Regras do Torneio");
+        titulo.setFont(new Font("SansSerif", Font.BOLD, 18));
+        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        p.add(titulo);
+        p.add(Box.createVerticalStrut(30));
+
+        // Dias de Descanso
+        JLabel lblDias = new JLabel("Dias de Descanso (mínimo 3 dias)");
+        lblDias.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblDias.setFont(new Font("SansSerif", Font.BOLD, 12));
+        JTextField txtDias = new JTextField(diasDescansoConfigurados >= 0 ? String.valueOf(diasDescansoConfigurados) : "");
+        txtDias.setMaximumSize(new Dimension(100, 30));
+        txtDias.setHorizontalAlignment(JTextField.CENTER);
+        txtDias.setBorder(new LineBorder(COR_BRANCO, 5, true));
+        p.add(lblDias);
+        p.add(Box.createVerticalStrut(10));
+        p.add(txtDias);
+        p.add(Box.createVerticalStrut(30));
+
+        // Total de Equipas
+        JLabel lblEquipas = new JLabel("Número total de equipas");
+        lblEquipas.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblEquipas.setFont(new Font("SansSerif", Font.BOLD, 12));
+        JTextField txtEquipas = new JTextField(numeroTotalEquipasConfigurado >= 0 ? String.valueOf(numeroTotalEquipasConfigurado) : "");
+        txtEquipas.setMaximumSize(new Dimension(100, 30));
+        txtEquipas.setHorizontalAlignment(JTextField.CENTER);
+        txtEquipas.setBorder(new LineBorder(COR_BRANCO, 5, true));
+        p.add(lblEquipas);
+        p.add(Box.createVerticalStrut(10));
+        p.add(txtEquipas);
+
+        p.add(Box.createVerticalGlue());
+
+        // Botão Concluído
+        JButton btnConcluido = criarBotaoFigma("Concluído");
+        btnConcluido.setMaximumSize(new Dimension(300, 38));
+        btnConcluido.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnConcluido.addActionListener(e -> {
+            try {
+                int dias = Integer.parseInt(txtDias.getText().trim());
+                int equipas = Integer.parseInt(txtEquipas.getText().trim());
+
+                if (dias < 3) throw new IllegalArgumentException("Os dias de descanso têm de ser no mínimo 3.");
+                if (equipas <= 0 || equipas % 4 != 0) throw new IllegalArgumentException("O número de equipas tem de ser múltiplo de 4.");
+
+                diasDescansoConfigurados = dias;
+                numeroTotalEquipasConfigurado = equipas;
+                dialog.dispose(); // Fecha a janela se estiver tudo bem
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Introduza valores numéricos válidos.", "Erro", JOptionPane.ERROR_MESSAGE);
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        p.add(btnConcluido);
+
+        dialog.add(p);
+        dialog.setVisible(true);
+    }
+
+    // ── ATUALIZADO: Lógica de Validação ──
     private void validarEGerarTorneio() {
+        // Verifica se o utilizador abriu as regras e configurou os valores
+        if (diasDescansoConfigurados < 0 || numeroTotalEquipasConfigurado < 0) {
+            JOptionPane.showMessageDialog(this, "Por favor, defina as regras do torneio (botão 'Definir Regras...').", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Verifica se inseriram exatamente o número de equipas pedido nas regras
+        if (listModel.size() != numeroTotalEquipasConfigurado) {
+            JOptionPane.showMessageDialog(this, "Tem " + listModel.size() + " equipas, mas as regras exigem " + numeroTotalEquipasConfigurado + ".\nAdicione ou remova equipas.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         String strInicio = campDataInicio.getText().trim();
         String strFim    = campDataFim.getText().trim();
-        String strDias   = campDiasDescanso.getText().trim();
-
         final String PLACEHOLDER_INICIO = "Data de Início (dd/MM/yyyy)...";
         final String PLACEHOLDER_FIM    = "Data de Fim (dd/MM/yyyy)...";
-        final String PLACEHOLDER_DIAS   = "Dias de descanso entre jogos (ex: 2)...";
 
         if (strInicio.equals(PLACEHOLDER_INICIO)) strInicio = "";
         if (strFim.equals(PLACEHOLDER_FIM))       strFim    = "";
-        if (strDias.equals(PLACEHOLDER_DIAS))      strDias   = "";
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         LocalDate dataInicio, dataFim;
-        int diasDescanso;
 
         try {
             dataInicio = LocalDate.parse(strInicio, fmt);
@@ -218,20 +301,13 @@ public class JanelaPrincipal extends JFrame {
             lblErroDataFim.setText("Formato inválido. Ex: 30/06/2026");
             return;
         }
-        try {
-            diasDescanso = Integer.parseInt(strDias.isBlank() ? "1" : strDias);
-            if (diasDescanso < 0) throw new NumberFormatException();
-        } catch (NumberFormatException ex) {
-            lblErroDias.setText("Introduza um número positivo.");
-            return;
-        }
 
         lblErroDataInicio.setText(" ");
         lblErroDataFim.setText(" ");
-        lblErroDias.setText(" ");
 
         try {
-            torneioControlador.configurarTorneio(dataInicio, dataFim, diasDescanso);
+            // Usa as variáveis guardadas pelo Formulario de Regras
+            torneioControlador.configurarTorneio(dataInicio, dataFim, diasDescansoConfigurados);
             abrirDashboard();
         } catch (IllegalArgumentException ex) {
             String msg = switch (ex.getMessage()) {
@@ -429,7 +505,6 @@ public class JanelaPrincipal extends JFrame {
     }
 
     private JPanel criarColunaCentro() {
-        // (ESTE MÉTODO MANTÉM-SE EXATAMENTE IGUAL AO QUE TE DEI ANTES - DESENHO DA ÁRVORE)
         JPanel painel = criarCaixaCinza("Eliminatória");
         painel.setLayout(new BorderLayout());
         painel.setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -440,38 +515,87 @@ public class JanelaPrincipal extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                int w = getWidth(); int h = getHeight();
+                int x1 = 20, x2 = w / 3, x3 = (w / 3) * 2, x4 = w - 40;
+
+                // 1. DESENHAR AS LINHAS DA BRACKET
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(2));
 
-                int w = getWidth(); int h = getHeight();
-                int x1 = 20, x2 = w / 3, x3 = (w / 3) * 2, x4 = w - 20;
-
                 int[] yPos = {h/8, (h/8)*3, (h/8)*5, (h/8)*7};
                 for (int y : yPos) {
-                    g2.drawLine(x1, y - 20, x2, y - 20);
-                    g2.drawLine(x1, y + 20, x2, y + 20);
-                    g2.drawLine(x2, y - 20, x2, y + 20);
+                    g2.drawLine(x1, y - 20, x2, y - 20); // Linha cima
+                    g2.drawLine(x1, y + 20, x2, y + 20); // Linha baixo
+                    g2.drawLine(x2, y - 20, x2, y + 20); // Fecho vertical
                 }
                 g2.drawLine(x2, yPos[0], x3, yPos[0]);
                 g2.drawLine(x2, yPos[1], x3, yPos[1]);
-                g2.drawLine(x3, yPos[0], x3, yPos[1]);
+                g2.drawLine(x3, yPos[0], x3, yPos[1]); // Fecho Meia 1
 
                 g2.drawLine(x2, yPos[2], x3, yPos[2]);
                 g2.drawLine(x2, yPos[3], x3, yPos[3]);
-                g2.drawLine(x3, yPos[2], x3, yPos[3]);
+                g2.drawLine(x3, yPos[2], x3, yPos[3]); // Fecho Meia 2
 
                 int meio1 = (yPos[0] + yPos[1]) / 2;
                 int meio2 = (yPos[2] + yPos[3]) / 2;
                 g2.drawLine(x3, meio1, x4, meio1);
                 g2.drawLine(x3, meio2, x4, meio2);
-                g2.drawLine(x4, meio1, x4, meio2);
-                g2.drawLine(x4, h/2, w, h/2);
+                g2.drawLine(x4, meio1, x4, meio2); // Fecho Final
+                g2.drawLine(x4, h/2, w - 10, h/2); // Linha Vencedor
+
+                // 2. ESCREVER OS NOMES DAS EQUIPAS DINAMICAMENTE
+                g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+                g2.setColor(new Color(0x333333)); // Cinza escuro para o texto
+
+                // Vai buscar todos os jogos ao controlador
+                java.util.List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> todosJogos = jogoControlador.getJogos();
+
+                // --- QUARTOS DE FINAL ---
+                int[] yQuartosTexto = {yPos[0]-25, yPos[0]+15, yPos[1]-25, yPos[1]+15, yPos[2]-25, yPos[2]+15, yPos[3]-25, yPos[3]+15};
+                java.util.List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> jogosQuartos = todosJogos.stream()
+                        .filter(j -> j.getFase() != null && j.getFase().name().equals("QUARTOS"))
+                        .toList();
+
+                for (int i = 0; i < Math.min(jogosQuartos.size(), 4); i++) {
+                    g2.drawString(jogosQuartos.get(i).getEquipaCasa().getNome(), x1 + 5, yQuartosTexto[i*2]);
+                    g2.drawString(jogosQuartos.get(i).getEquipaFora().getNome(), x1 + 5, yQuartosTexto[(i*2) + 1]);
+                }
+
+                // --- MEIAS FINAIS ---
+                int[] yMeiasTexto = {yPos[0]-5, yPos[1]-5, yPos[2]-5, yPos[3]-5};
+                java.util.List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> jogosMeias = todosJogos.stream()
+                        .filter(j -> j.getFase() != null && j.getFase().name().equals("MEIAS"))
+                        .toList();
+
+                for (int i = 0; i < Math.min(jogosMeias.size(), 2); i++) {
+                    g2.drawString(jogosMeias.get(i).getEquipaCasa().getNome(), x2 + 5, yMeiasTexto[i*2]);
+                    g2.drawString(jogosMeias.get(i).getEquipaFora().getNome(), x2 + 5, yMeiasTexto[(i*2) + 1]);
+                }
+
+                // --- FINAL ---
+                java.util.List<pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo> jogosFinal = todosJogos.stream()
+                        .filter(j -> j.getFase() != null && j.getFase().name().equals("FINAL"))
+                        .toList();
+
+                if (!jogosFinal.isEmpty()) {
+                    g2.drawString(jogosFinal.get(0).getEquipaCasa().getNome(), x3 + 5, meio1 - 5);
+                    g2.drawString(jogosFinal.get(0).getEquipaFora().getNome(), x3 + 5, meio2 - 5);
+
+                    // --- VENCEDOR ---
+                    String vencedor = jogoControlador.obterVencedorTorneio();
+                    if (vencedor != null && !vencedor.contains("TBD") && !vencedor.contains("Torneio")) {
+                        g2.setColor(new Color(0x27AE60)); // Fica a verde se houver campeão!
+                        g2.drawString("🏆 " + vencedor, x4 + 5, (h/2) - 5);
+                    }
+                }
             }
         };
         canvasBranco.setBackground(COR_BRANCO);
         painel.add(canvasBranco, BorderLayout.CENTER);
         return painel;
     }
+
 
     private JPanel criarColunaDireitaAutomatica() {
         JPanel painel = new JPanel();
@@ -520,7 +644,7 @@ public class JanelaPrincipal extends JFrame {
 
         JLabel lblTitulo = new JLabel(titulo);
         lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 16));
-        lblTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
         p.add(lblTitulo);
         p.add(Box.createVerticalStrut(10));
         return p;
@@ -607,30 +731,47 @@ public class JanelaPrincipal extends JFrame {
     private JTextField criarCampoData(String placeholder, JLabel lblErro) {
         JTextField campo = new JTextField() {
             @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Fundo branco com cantos arredondados (igual aos botões)
+                g2.setColor(COR_BRANCO);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+
                 super.paintComponent(g);
+
+                // Se estiver vazio, desenha o placeholder cinzento
                 if (getText().isEmpty()) {
-                    Graphics2D g2 = (Graphics2D) g.create();
                     g2.setColor(Color.GRAY);
                     g2.setFont(getFont().deriveFont(Font.ITALIC));
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString(placeholder, getInsets().left,
                             (getHeight() - fm.getHeight()) / 2 + fm.getAscent());
-                    g2.dispose();
                 }
+                g2.dispose();
             }
         };
-        campo.setMaximumSize(new Dimension(380, 34));
-        campo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        campo.setBackground(COR_BRANCO);
-        campo.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(COR_BRANCO, 1, true), new EmptyBorder(5, 10, 5, 10)));
+
+        campo.setOpaque(false); // Remove as pontas brancas quadradas!
+
+        // FORÇA O TAMANHO E O ALINHAMENTO EXATAMENTE IGUAL AOS BOTÕES:
+        campo.setMaximumSize(new Dimension(380, 38));
+        campo.setPreferredSize(new Dimension(380, 38));
+        campo.setAlignmentX(Component.CENTER_ALIGNMENT); // <--- O SEGREDO ESTÁ AQUI
+
+        // Margens internas para o texto não ficar colado à borda
+        campo.setBorder(new EmptyBorder(5, 15, 5, 15));
+
+        // Limpa a mensagem de erro quando clicamos na caixa
         campo.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusGained(java.awt.event.FocusEvent e) {
                 lblErro.setText(" ");
             }
         });
+
         return campo;
     }
+
 
     private JButton criarBotaoFigma(String texto) {
         JButton btn = new JButton(texto) {
@@ -638,15 +779,17 @@ public class JanelaPrincipal extends JFrame {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(isEnabled() ? COR_BRANCO : new Color(0xDDDDDD));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                // 15 para ter cantos mais redondinhos e modernos
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
-        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT); // ALINHAMENTO CORRIGIDO PARA O CENTRO
         btn.setForeground(Color.BLACK);
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
+        btn.setOpaque(false); // ISTO TIRA O FUNDO BRANCO ESTRANHO!
         btn.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(COR_BRANCO, 1, true), new EmptyBorder(5, 10, 5, 10)));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
