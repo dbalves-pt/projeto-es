@@ -134,131 +134,145 @@ public class PainelEquipas extends JPanel {
     //  COLUNA 2: Detalhes da Equipa (A preencher no futuro)
     // ══════════════════════════════════════════════════════════════════════════
     private JPanel criarColunaMeio() {
-        JPanel painel = criarCartaoCinza();
+            JPanel painel = criarCartaoCinza();
 
-        lblNomeEquipaMeio = new JLabel("Selecione uma equipa...");
-        lblNomeEquipaMeio.setFont(new Font("SansSerif", Font.BOLD, 18));
-        lblNomeEquipaMeio.setAlignmentX(Component.LEFT_ALIGNMENT);
-        painel.add(lblNomeEquipaMeio);
-        painel.add(Box.createVerticalStrut(15));
+            lblNomeEquipaMeio = new JLabel("Selecione uma equipa...");
+            lblNomeEquipaMeio.setFont(new Font("SansSerif", Font.BOLD, 18));
+            lblNomeEquipaMeio.setAlignmentX(Component.LEFT_ALIGNMENT);
+            painel.add(lblNomeEquipaMeio);
+            painel.add(Box.createVerticalStrut(15));
 
-        JLabel lblJogadores = new JLabel("Jogadores");
-        lblJogadores.setFont(new Font("SansSerif", Font.BOLD, 14));
-        lblJogadores.setAlignmentX(Component.LEFT_ALIGNMENT);
-        painel.add(lblJogadores);
-        painel.add(Box.createVerticalStrut(5));
+            JLabel lblJogadores = new JLabel("Jogadores");
+            lblJogadores.setFont(new Font("SansSerif", Font.BOLD, 14));
+            lblJogadores.setAlignmentX(Component.LEFT_ALIGNMENT);
+            painel.add(lblJogadores);
+            painel.add(Box.createVerticalStrut(5));
 
-        // ── NOVA LISTA DE JOGADORES SELECIONÁVEL ──
-        listModelJogadores = new DefaultListModel<>();
-        listaJogadoresMeio = new JList<>(listModelJogadores);
-        listaJogadoresMeio.setFixedCellHeight(25);
-        // Formatar o aspeto de cada jogador na lista
+            // ── NOVA LISTA DE JOGADORES SELECIONÁVEL ──
+            listModelJogadores = new DefaultListModel<>();
+            listaJogadoresMeio = new JList<>(listModelJogadores);
+            listaJogadoresMeio.setFixedCellHeight(25);
+            // Formatar o aspeto de cada jogador na lista
+        // ── Formatar o aspeto de cada jogador na lista (COM ESTADO) ──
         listaJogadoresMeio.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
                 if (value instanceof pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador) {
                     pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador j = (pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador) value;
-                    label.setText("  " + j.getNomeCompleto());
+
+                    // Define o texto: Nome + (Estado)
+                    String estadoTexto = j.getEstado().toString(); // Assumindo que o enum tem .toString() que devolve "Apto"/"Inapto"
+                    label.setText(String.format("  %s (%s)", j.getNomeCompleto(), estadoTexto));
+
+                    // Colore a vermelho se estiver Inapto, preto caso contrário
+                    if (j.getEstado() == pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador.Estado.INAPTO) {
+                        label.setForeground(Color.RED);
+                        label.setFont(label.getFont().deriveFont(Font.BOLD)); // Destaque visual
+                    } else {
+                        label.setForeground(Color.BLACK);
+                        label.setFont(label.getFont().deriveFont(Font.PLAIN));
+                    }
                 }
                 label.setBorder(new EmptyBorder(0, 5, 0, 5));
                 return label;
             }
         });
 
-        JScrollPane scrollJogadores = new JScrollPane(listaJogadoresMeio);
-        scrollJogadores.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
-        scrollJogadores.setAlignmentX(Component.LEFT_ALIGNMENT);
-        painel.add(scrollJogadores);
+            JScrollPane scrollJogadores = new JScrollPane(listaJogadoresMeio);
+            scrollJogadores.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
+            scrollJogadores.setAlignmentX(Component.LEFT_ALIGNMENT);
+            painel.add(scrollJogadores);
 
-        // ── NOVO: Duplo Clique para Editar Jogador ──
-        // ── Duplo Clique para Editar Jogador (Atualizado) ──
-        listaJogadoresMeio.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                if (evt.getClickCount() == 2) {
-                    pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador j = listaJogadoresMeio.getSelectedValue();
-                    if (j != null && equipaSelecionadaAtual != null) {
-                        pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador form = new pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador(
-                                SwingUtilities.getWindowAncestor(PainelEquipas.this),
-                                jogadorControlador, equipaSelecionadaAtual, j, PainelEquipas.this::atualizarListasAposEdicao
-                        );
-                        form.setVisible(true);
+            // ── NOVO: Duplo Clique para Editar Jogador ──
+            // ── Duplo Clique para Editar Jogador (Atualizado) ──
+            listaJogadoresMeio.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent evt) {
+                    if (evt.getClickCount() == 2) {
+                        pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador j = listaJogadoresMeio.getSelectedValue();
+                        if (j != null && equipaSelecionadaAtual != null) {
+                            pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador form = new pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador(
+                                    SwingUtilities.getWindowAncestor(PainelEquipas.this),
+                                    jogadorControlador, equipaSelecionadaAtual, j, PainelEquipas.this::atualizarListasAposEdicao
+                            );
+                            form.setVisible(true);
+                        }
                     }
                 }
-            }
-        });
-        // ─────────────────────────────────────────────
+            });
+            // ─────────────────────────────────────────────
 
-        painel.add(Box.createVerticalStrut(10));
+            painel.add(Box.createVerticalStrut(10));
 
-        // ── BOTÕES DOS JOGADORES ──
-        // ── BOTÕES DOS JOGADORES ──
-        JButton btnInserirJog = new JButton("Inserir jogador...");
-        btnInserirJog.setContentAreaFilled(false);
-        btnInserirJog.setBorder(new EmptyBorder(5, 0, 5, 0));
-        btnInserirJog.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btnInserirJog.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnInserirJog.addActionListener(e -> {
+            // ── BOTÕES DOS JOGADORES ──
+            // ── BOTÕES DOS JOGADORES ──
+            JButton btnInserirJog = new JButton("Inserir jogador...");
+            btnInserirJog.setContentAreaFilled(false);
+            btnInserirJog.setBorder(new EmptyBorder(5, 0, 5, 0));
+            btnInserirJog.setAlignmentX(Component.LEFT_ALIGNMENT);
+            btnInserirJog.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnInserirJog.addActionListener(e -> {
 
-            // ── NOVA VERIFICAÇÃO: BLOQUEIA APENAS SE A BOLA JÁ ROLOU NO 1º JOGO ──
-            if (jogadorControlador.isMercadoFechado()) {
-                JOptionPane.showMessageDialog(this,
-                        "O primeiro jogo já começou! A inscrição de novos jogadores está encerrada.",
-                        "Mercado Fechado", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (equipaSelecionadaAtual != null) {
-                pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador form = new pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador(
-                        SwingUtilities.getWindowAncestor(this), jogadorControlador, equipaSelecionadaAtual, null, this::atualizarListasAposEdicao);
-                form.setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(this, "Selecione uma equipa primeiro!", "Aviso", JOptionPane.WARNING_MESSAGE);
-            }
-        });
-        painel.add(btnInserirJog);
-
-        JButton btnEliminarJog = new JButton("Eliminar jogador...");
-        btnEliminarJog.setContentAreaFilled(false);
-        btnEliminarJog.setBorder(new EmptyBorder(0, 0, 15, 0)); // Espaço em baixo para separar da Eliminar Equipa
-        btnEliminarJog.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btnEliminarJog.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnEliminarJog.addActionListener(e -> {
-
-            // ── NOVA VERIFICAÇÃO: BLOQUEIA APENAS SE A BOLA JÁ ROLOU NO 1º JOGO ──
-            if (jogadorControlador.isMercadoFechado()) {
-                JOptionPane.showMessageDialog(this,
-                        "Não é possível eliminar jogadores depois do primeiro jogo arrancar!",
-                        "Mercado Fechado", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador j = listaJogadoresMeio.getSelectedValue();
-            if (j != null && equipaSelecionadaAtual != null) {
-                int confirmacao = JOptionPane.showConfirmDialog(this,
-                        "Tem a certeza que deseja eliminar o jogador " + j.getNomeCompleto() + "?",
-                        "Confirmar", JOptionPane.YES_NO_OPTION);
-                if (confirmacao == JOptionPane.YES_OPTION) {
-                    // 1. Elimina no controlador
-                    jogadorControlador.eliminarJogador(equipaSelecionadaAtual, j);
-
-                    // 2. Atualiza os dados no modelo da lista direita imediatamente
-                    listModelJogadores.removeElement(j);
-
-                    // 3. Atualiza a lista da esquerda para refletir alterações se necessário
-                    atualizarLista();
+                // ── NOVA VERIFICAÇÃO: BLOQUEIA APENAS SE A BOLA JÁ ROLOU NO 1º JOGO ──
+                if (jogadorControlador.isMercadoFechado()) {
+                    JOptionPane.showMessageDialog(this,
+                            "O primeiro jogo já começou! A inscrição de novos jogadores está encerrada.",
+                            "Mercado Fechado", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "Selecione um jogador na lista branca primeiro!", "Aviso", JOptionPane.WARNING_MESSAGE);
-            }
-        });
-        painel.add(btnEliminarJog);
 
-        // Espaço elástico para empurrar o "Eliminar Equipa" para o fundo
-        painel.add(Box.createVerticalGlue());
-        return painel;
-    }
+                if (equipaSelecionadaAtual != null) {
+                    pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador form = new pt.ipleiria.estg.dei.ei.esoft.vista.FormularioJogador(
+                            SwingUtilities.getWindowAncestor(this), jogadorControlador, equipaSelecionadaAtual, null, this::atualizarListasAposEdicao);
+                    form.setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Selecione uma equipa primeiro!", "Aviso", JOptionPane.WARNING_MESSAGE);
+                }
+            });
+            painel.add(btnInserirJog);
+
+            JButton btnEliminarJog = new JButton("Eliminar jogador...");
+            btnEliminarJog.setContentAreaFilled(false);
+            btnEliminarJog.setBorder(new EmptyBorder(0, 0, 15, 0)); // Espaço em baixo para separar da Eliminar Equipa
+            btnEliminarJog.setAlignmentX(Component.LEFT_ALIGNMENT);
+            btnEliminarJog.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnEliminarJog.addActionListener(e -> {
+
+                // ── NOVA VERIFICAÇÃO: BLOQUEIA APENAS SE A BOLA JÁ ROLOU NO 1º JOGO ──
+                if (jogadorControlador.isMercadoFechado()) {
+                    JOptionPane.showMessageDialog(this,
+                            "Não é possível eliminar jogadores depois do primeiro jogo arrancar!",
+                            "Mercado Fechado", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                pt.ipleiria.estg.dei.ei.esoft.modelo.Jogador j = listaJogadoresMeio.getSelectedValue();
+                if (j != null && equipaSelecionadaAtual != null) {
+                    int confirmacao = JOptionPane.showConfirmDialog(this,
+                            "Tem a certeza que deseja eliminar o jogador " + j.getNomeCompleto() + "?",
+                            "Confirmar", JOptionPane.YES_NO_OPTION);
+                    if (confirmacao == JOptionPane.YES_OPTION) {
+                        // 1. Elimina no controlador
+                        jogadorControlador.eliminarJogador(equipaSelecionadaAtual, j);
+
+                        // 2. Atualiza os dados no modelo da lista direita imediatamente
+                        listModelJogadores.removeElement(j);
+
+                        // 3. Atualiza a lista da esquerda para refletir alterações se necessário
+                        atualizarLista();
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "Selecione um jogador na lista branca primeiro!", "Aviso", JOptionPane.WARNING_MESSAGE);
+                }
+            });
+            painel.add(btnEliminarJog);
+
+            // Espaço elástico para empurrar o "Eliminar Equipa" para o fundo
+            painel.add(Box.createVerticalGlue());
+            return painel;
+        }
 
 
     // ══════════════════════════════════════════════════════════════════════════

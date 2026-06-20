@@ -47,6 +47,8 @@ public class EquipaControlador {
     //  UC01 — Adicionar Equipa
     // ══════════════════════════════════════════════════════════════════════════
 
+
+
     public void adicionarEquipa(String nome, String pais) {
         if (torneio.gruposGerados()) throw new IllegalStateException("GRUPOS_GERADOS");
         validarCamposComuns(nome, pais, null);
@@ -98,8 +100,16 @@ public class EquipaControlador {
 
     public List<String>  getPaisesDisponiveis()        { return PAISES_VALIDOS; }
     public List<Equipa>  getEquipas()                  { return torneio.getEquipas(); }
-    public boolean       isEdicaoBloqueada()           { return torneio.gruposGerados(); }
+    public boolean isEdicaoBloqueada() {
+        // 1. Bloqueia se os grupos já foram gerados (Regra antiga)
+        if (torneio.gruposGerados()) return true;
 
+        // 2. Bloqueia se algum jogo já começou (Regra nova: Mercado Fechado)
+        pt.ipleiria.estg.dei.ei.esoft.controlador.JogoControlador jc = new pt.ipleiria.estg.dei.ei.esoft.controlador.JogoControlador();
+        return jc.getJogos().stream().anyMatch(j ->
+                j.getEstado() != pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo.Estado.CALENDARIZADO
+        );
+    }
     // ── Validação comum (UC01 + UC02) ─────────────────────────────────────────
 
     /**

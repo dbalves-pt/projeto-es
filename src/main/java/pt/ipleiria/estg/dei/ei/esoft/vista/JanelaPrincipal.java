@@ -506,7 +506,7 @@ public class JanelaPrincipal extends JFrame {
                 painelEstatisticas.atualizar();
             }
         });
- 
+
         PainelBilhetesPatrocinios painelBilhetes = new PainelBilhetesPatrocinios(
                 bilheteControlador, patrocinioControlador, financeiroControlador, jogoControlador);
         tabs.addTab("Receita", painelBilhetes);

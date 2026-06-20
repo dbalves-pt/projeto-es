@@ -44,78 +44,29 @@ public class Main {
     private static void carregarDadosDeTeste() {
         Torneio torneio = Torneio.getInstancia();
 
-        // 1. Criar Estádios e Bancadas
+        // 1. Criar Estádio
         Estadio e1 = new Estadio("Estádio da Luz", "Lisboa", "Portugal", 65000);
-        e1.adicionarBancada(new Bancada("Bancada VIP", 150.0, "VIP", 10, 500));
         torneio.adicionarEstadio(e1);
 
-        // 2. Criar Equipas e Jogadores
-        // Criamos a equipa primeiro
-        Equipa portugal = new Equipa("Portugal", "Portugal");
+        // Nomes das equipas para o ciclo
+        String[] nomesEquipas = {"Portugal", "França", "Espanha", "Brasil"};
 
-        // Criamos o jogador associando-o à equipa recém-criada
-        Jogador j1 = new Jogador(
-                "Cristiano Ronaldo",
-                portugal,
-                Jogador.Posicao.AVANCADO,
-                LocalDate.of(1985, 2, 5),
-                7,
-                Jogador.Estado.APTO
-        );
+        // 2. Criar cada equipa com 23 jogadores
+        for (String nome : nomesEquipas) {
+            Equipa equipa = new Equipa(nome, nome);
 
-        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
-        portugal.adicionarJogador(j1);
-
-        // Adicionamos a equipa ao torneio
-        torneio.adicionarEquipa(portugal);
-
-        // Adicionamos outras equipas simples
-        Equipa franca = new Equipa("França", "França");
-        Jogador j2 = new Jogador(
-                "Cristiano Ronaldo",
-                franca,
-                Jogador.Posicao.AVANCADO,
-                LocalDate.of(1985, 2, 5),
-                7,
-                Jogador.Estado.APTO
-        );
-
-        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
-        franca.adicionarJogador(j1);
-
-        // Adicionamos a equipa ao torneio
-        torneio.adicionarEquipa(franca);
-        Equipa espanha = new Equipa("Espanha", "Espanha");
-        Jogador j3 = new Jogador(
-                "Cristiano Ronaldo",
-                espanha,
-                Jogador.Posicao.AVANCADO,
-                LocalDate.of(1985, 2, 5),
-                7,
-                Jogador.Estado.APTO
-        );
-
-        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
-        espanha.adicionarJogador(j1);
-
-        // Adicionamos a equipa ao torneio
-        torneio.adicionarEquipa(espanha);
-        Equipa brasil = new Equipa("Brasil", "Brasil");
-        Jogador j4 = new Jogador(
-                "Cristiano Ronaldo",
-                brasil,
-                Jogador.Posicao.AVANCADO,
-                LocalDate.of(1985, 2, 5),
-                7,
-                Jogador.Estado.APTO
-        );
-
-        // Adicionamos o jogador à lista da equipa (supondo que tens um método adicionarJogador na classe Equipa)
-        brasil.adicionarJogador(j1);
-
-        // Adicionamos a equipa ao torneio
-        torneio.adicionarEquipa(brasil);
+            for (int i = 1; i <= 23; i++) {
+                Jogador j = new Jogador(
+                        nome + " Jogador " + i,
+                        equipa,
+                        Jogador.Posicao.AVANCADO,
+                        LocalDate.of(2000, 1, 1),
+                        i,
+                        Jogador.Estado.APTO
+                );
+                equipa.adicionarJogador(j);
+            }
+            torneio.adicionarEquipa(equipa);
+        }
     }
-
-
 }
