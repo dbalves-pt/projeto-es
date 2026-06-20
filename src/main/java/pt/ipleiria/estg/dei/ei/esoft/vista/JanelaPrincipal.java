@@ -2,6 +2,8 @@ package pt.ipleiria.estg.dei.ei.esoft.vista;
 
 import pt.ipleiria.estg.dei.ei.esoft.controlador.*;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Equipa;
+import pt.ipleiria.estg.dei.ei.esoft.modelo.Jogo;
+import pt.ipleiria.estg.dei.ei.esoft.modelo.Patrocinio;
 import pt.ipleiria.estg.dei.ei.esoft.modelo.Torneio;
 
 import javax.swing.*;
@@ -15,7 +17,7 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
-
+import java.util.List;
 /**
  * Janela de arranque — ecrã 'Criar Torneio' (UC07).
  * Após gerar o torneio, abre a dashboard com os separadores principais.
@@ -591,60 +593,100 @@ public class JanelaPrincipal extends JFrame {
         painelColunasDashboard.repaint();
     }
 
+    private JPanel criarCaixaCinzaComScroll(String titulo, JPanel conteudo, int alturaMaxima) {
+        JPanel caixa = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(217, 217, 217));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                g2.dispose();
+            }
+        };
+        caixa.setOpaque(false);
+        caixa.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        JLabel lblTitulo = new JLabel(titulo);
+        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 18));
+        lblTitulo.setBorder(new EmptyBorder(0, 0, 10, 0));
+        caixa.add(lblTitulo, BorderLayout.NORTH);
+
+        JScrollPane scroll = new JScrollPane(conteudo);
+        scroll.setBorder(null);
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scroll.setPreferredSize(new Dimension(0, alturaMaxima));
+        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, alturaMaxima));
+        caixa.add(scroll, BorderLayout.CENTER);
+
+        return caixa;
+    }
+
     private JPanel criarColunaEsquerdaAutomatica(JTabbedPane tabs) {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
         painel.setOpaque(false);
 
-        // 1. Bloco Patrocínios Dinâmico
-        JPanel pPatrocinios = criarCaixaCinza("Patrocínios");
-        pPatrocinios.add(criarLinhaDestaqueAmarela("TOTAL: " + financeiroControlador.getReceitaPatrocinios() + "€"));
-        pPatrocinios.add(Box.createVerticalStrut(3));
+        // ── Conteúdo dos Patrocínios ───────────────────────────────────────────
+        JPanel conteudoPatrocinios = new JPanel();
+        conteudoPatrocinios.setLayout(new BoxLayout(conteudoPatrocinios, BoxLayout.Y_AXIS));
+        conteudoPatrocinios.setOpaque(false);
 
-        java.util.List<pt.ipleiria.estg.dei.ei.esoft.modelo.Patrocinio> listaPatrocinios = patrocinioControlador.getPatrocinios();
+        java.util.List<Patrocinio> listaPatrocinios = patrocinioControlador.getPatrocinios();
         if (listaPatrocinios.isEmpty()) {
-            pPatrocinios.add(criarLinhaBranca("Sem patrocínios registados."));
-            pPatrocinios.add(Box.createVerticalStrut(3));
+            conteudoPatrocinios.add(criarLinhaBranca("Sem patrocínios registados."));
         } else {
-            for (pt.ipleiria.estg.dei.ei.esoft.modelo.Patrocinio p : listaPatrocinios) {
-                pPatrocinios.add(criarLinhaBranca(p.getNomePatrocinador() + ": " + p.getValor() + "€"));
-                pPatrocinios.add(Box.createVerticalStrut(3));
+            double totalPatrocinios = listaPatrocinios.stream().mapToDouble(Patrocinio::getValor).sum();
+            conteudoPatrocinios.add(criarLinhaDestaqueAmarela("TOTAL: " + totalPatrocinios + "€"));
+            conteudoPatrocinios.add(Box.createVerticalStrut(3));
+            for (Patrocinio p : listaPatrocinios) {
+                conteudoPatrocinios.add(criarLinhaBranca(p.getNomePatrocinador() + ": " + p.getValor() + "€"));
+                conteudoPatrocinios.add(Box.createVerticalStrut(3));
             }
         }
 
-
-        painel.add(pPatrocinios);
+        JPanel caixaPatrocinios = criarCaixaCinzaComScroll("Patrocínios", conteudoPatrocinios, 180);
+        painel.add(caixaPatrocinios);
         painel.add(Box.createVerticalStrut(20));
 
-        // 2. Bloco Bilheteira Dinâmico
-        JPanel pBilheteira = criarCaixaCinza("Bilheteira");
-        pBilheteira.add(criarLinhaBrancaTotal("TOTAL: " + financeiroControlador.getReceitaBilheteira() + "€"));
-        pBilheteira.add(Box.createVerticalStrut(3));
-        pBilheteira.add(criarLinhaBranca("Portugal x França: 5000€"));
-        pBilheteira.add(Box.createVerticalStrut(3));
-        pBilheteira.add(criarLinhaBranca("Alemanha x Brasil: 3500€"));
-        pBilheteira.add(Box.createVerticalStrut(3));
-        pBilheteira.add(criarLinhaBranca("(Jogos inseridos automaticamente)"));
-        painel.add(pBilheteira);
+        // ── Conteúdo da Bilheteira ─────────────────────────────────────────────
+        JPanel conteudoBilheteira = new JPanel();
+        conteudoBilheteira.setLayout(new BoxLayout(conteudoBilheteira, BoxLayout.Y_AXIS));
+        conteudoBilheteira.setOpaque(false);
+
+        double totalBilheteira = financeiroControlador.getReceitaBilheteira();
+        conteudoBilheteira.add(criarLinhaBrancaTotal("TOTAL: " + totalBilheteira + "€"));
+        conteudoBilheteira.add(Box.createVerticalStrut(3));
+
+        java.util.List<Jogo> jogos = jogoControlador.getJogos();
+        if (jogos.isEmpty()) {
+            conteudoBilheteira.add(criarLinhaBranca("Nenhum jogo gerado."));
+        } else {
+            for (Jogo jogo : jogos) {
+                double receita = bilheteControlador.getReceitaPorJogo(jogo);
+                String descricao = jogo.getEquipaCasa().getNome() + " vs " + jogo.getEquipaFora().getNome();
+                conteudoBilheteira.add(criarLinhaBranca(descricao + ": " + String.format("%.2f", receita) + "€"));
+                conteudoBilheteira.add(Box.createVerticalStrut(3));
+            }
+        }
+
+        JPanel caixaBilheteira = criarCaixaCinzaComScroll("Bilheteira", conteudoBilheteira, 180);
+        painel.add(caixaBilheteira);
 
         painel.add(Box.createVerticalGlue());
 
-        // 3. Botão Gerar Calendário
+        // ── Botão Gerar Calendário (mantido) ──────────────────────────────────
         JButton btnGerarCal = criarBotaoCinza("Gerar Calendário");
         btnGerarCal.addActionListener(e -> {
             try {
-                // (Se a tua lógica tiver um método de gerar, tipo torneioControlador.gerarCalendario(), devia estar aqui!)
-
                 java.util.List<String> conflitos = torneioControlador.validarCalendario();
                 if (conflitos.isEmpty()) {
                     torneioControlador.confirmarValidacao();
                     torneioControlador.iniciarTorneio();
                     JOptionPane.showMessageDialog(this, "Calendário validado e torneio iniciado!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-
-                    // --- NOVO: Desbloqueia a aba e salta para lá! ---
                     tabs.setEnabledAt(3, true);
-                    // ------------------------------------------------
-
                     tabs.setSelectedIndex(3);
                 } else {
                     StringBuilder erro = new StringBuilder("Conflitos no calendário:\n\n");
@@ -759,17 +801,17 @@ public class JanelaPrincipal extends JFrame {
 
         String assisNome = jogoControlador.obterNomeMaisAssistencias();
         String assisNum = jogoControlador.obterNumeroMaisAssistencias();
-        painel.add(criarCartaoEstatistica("Jogador com mais assistências", "Assistências", assisNome, assisNum));
+        painel.add(criarCartaoEstatistica("Mais assistências", "Assistências", assisNome, assisNum));
         painel.add(Box.createVerticalStrut(15));
 
         String defNome = jogoControlador.obterEquipaMelhorDefesa();
         String defGolos = jogoControlador.obterGolosSofridosMelhorDefesa();
-        painel.add(criarCartaoEstatistica("Equipa com a melhor defesa", "Golos sofridos", defNome, defGolos));
+        painel.add(criarCartaoEstatistica("Melhor defesa", "Golos sofridos", defNome, defGolos));
         painel.add(Box.createVerticalStrut(15));
 
         String atqNome = jogoControlador.obterEquipaMelhorAtaque();
         String atqGolos = jogoControlador.obterGolosMarcadosMelhorAtaque();
-        painel.add(criarCartaoEstatistica("Equipa com o melhor ataque", "Golos marcados", atqNome, atqGolos));
+        painel.add(criarCartaoEstatistica("Melhor ataque", "Golos marcados", atqNome, atqGolos));
 
         painel.add(Box.createVerticalGlue()); // Evita que os cartões estiquem
 
